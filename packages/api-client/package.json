@@ -1,0 +1,23 @@
+{
+    "name": "@statscode/api-client",
+    "version": "0.1.0",
+    "description": "StatsCode API Client SDK - No credentials required",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run"
+    },
+    "keywords": [
+        "statscode",
+        "api",
+        "client",
+        "sdk"
+    ],
+    "license": "MIT",
+    "dependencies": {},
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

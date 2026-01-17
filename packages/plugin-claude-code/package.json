@@ -1,0 +1,25 @@
+{
+    "name": "@statscode/plugin-claude-code",
+    "version": "0.1.0",
+    "description": "StatsCode plugin for Claude Code - Track your AI coding stats",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run"
+    },
+    "keywords": [
+        "statscode",
+        "claude-code",
+        "plugin",
+        "ai-stats"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "@statscode/core": "file:../core"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

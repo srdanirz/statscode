@@ -1,0 +1,27 @@
+{
+    "name": "@statscode/core",
+    "version": "0.1.0",
+    "description": "Core tracking and analysis engine for StatsCode",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "keywords": [
+        "ai",
+        "coding",
+        "stats",
+        "tracker"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "sql.js": "^1.10.0"
+    },
+    "devDependencies": {},
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
