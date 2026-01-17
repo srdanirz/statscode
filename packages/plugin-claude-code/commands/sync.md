@@ -1,22 +1,53 @@
 ---
-description: Sync your local stats to the StatsCode cloud leaderboard
+description: Sync your local stats to the global leaderboard
 ---
 
 # Sync Command
 
-Upload your local statistics to the cloud to appear on the global leaderboard.
+Upload your local statistics to appear on the StatsCode global leaderboard.
 
 ## Usage
 
-Run after logging in with `/stats:login`.
+Type `/stats:sync` to sync your stats.
+
+## Requirements
+
+You must be logged in first. Run `/stats:login` if you haven't.
 
 ## What Gets Synced
 
-- Total hours tracked
-- Session count
-- Tool-specific stats (Claude Code, Cursor, etc.)
-- Earned badges
+| Data | Synced |
+|------|--------|
+| Total hours | Yes |
+| Session count | Yes |
+| Tool breakdown | Yes |
+| Earned badges | Yes |
+| Your code | **Never** |
+| Your prompts | **Never** |
+| File names | **Never** |
 
-## Privacy
+## Output
 
-Only aggregated stats are synced. No code or prompts are ever uploaded.
+```
+Syncing stats to StatsCode...
+
+Uploaded:
+- 127.5 hours (+2.3h since last sync)
+- 89 sessions
+- 5 badges
+
+Your rank: #142 globally
+
+View your profile: statscode.dev/profile/YOUR_USERNAME
+```
+
+## Auto-Sync
+
+To enable automatic syncing after each session, add to your config:
+
+```json
+// ~/.statscode/config.json
+{
+  "autoSync": true
+}
+```

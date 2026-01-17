@@ -1,101 +1,107 @@
 # StatsCode
 
-Open source library to track, analyze, and certify how you use AI coding assistants.
+Open source library to track, analyze, and certify your AI coding assistant usage.
 
-## Features
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/@statscode/core.svg)](https://www.npmjs.com/package/@statscode/core)
 
-- **Multi-tool tracking**: Claude Code, Codex, Antigravity, OpenCode, Cursor
-- **Local-first**: All data stored locally by default
-- **Badge system**: Earn achievements based on your coding style
-- **Verifiable certificates**: Export stats for your resume or profile
+## What is StatsCode?
+
+StatsCode tracks how you use AI coding assistants like Claude Code, Cursor, Codex, and more. Think of it as **GitHub stats for AI-assisted coding**.
+
+- **Track hours** spent coding with AI
+- **Earn badges** based on your coding style
+- **Appear on the leaderboard** at statscode.dev
+- **Add a badge to your GitHub profile**
 
 ## Quick Start
 
+### For Claude Code
+
 ```bash
-# Clone
-git clone https://github.com/statscode/statscode.git
-cd statscode
+# Install the plugin
+cd ~/.claude/plugins
+git clone https://github.com/srdanirz/statscode
 
-# Install & build
-npm install
-npm run build
-
-# Run tests
-npm test
-
-# Run website
-cd packages/web && npm run dev
+# Use the commands:
+# /stats        - View your local statistics
+# /stats:login  - Connect to leaderboard (optional)
+# /stats:sync   - Upload stats to cloud
+# /stats:badge  - Get badge for your README
 ```
 
-## Project Structure
+### For Other Tools
 
+```bash
+npm install @statscode/core @statscode/plugin-cursor
+# or
+npm install @statscode/core @statscode/plugin-codex
 ```
-statscode/
-├── packages/
-│   ├── core/                 # Core tracking library
-│   │   └── src/
-│   │       ├── tracker.ts    # Session & interaction tracking
-│   │       ├── database.ts   # SQLite storage
-│   │       ├── analyzer.ts   # Stats calculation
-│   │       └── __tests__/    # Unit tests
-│   │
-│   ├── badges/               # Badge system
-│   │   └── src/
-│   │       ├── types.ts      # Type definitions
-│   │       ├── definitions.ts # Badge catalog
-│   │       ├── checker.ts    # Criteria evaluation
-│   │       └── __tests__/    # Unit tests
-│   │
-│   ├── plugin-claude-code/   # Claude Code integration
-│   ├── plugin-codex/         # Codex CLI integration
-│   ├── plugin-antigravity/   # Antigravity integration
-│   ├── plugin-opencode/      # OpenCode integration
-│   ├── plugin-cursor/        # Cursor IDE integration
-│   │
-│   └── web/                  # Next.js website
-│       └── app/
-│           ├── page.tsx      # Homepage
-│           ├── leaderboard/  # Rankings
-│           ├── badges/       # Badge gallery
-│           └── profile/      # User profiles
-│
-├── docs/                     # Documentation
-├── LICENSE                   # MIT License
-├── CONTRIBUTING.md           # Contribution guide
-└── CHANGELOG.md              # Release notes
+
+```typescript
+import { StatsCode } from '@statscode/core';
+import { createCursorPlugin } from '@statscode/plugin-cursor';
+
+const stats = new StatsCode();
+await stats.ready();
+
+// Start tracking
+stats.startSession('cursor');
+// ... your coding session ...
+stats.endSession();
+
+// View stats
+console.log(stats.getStats());
+```
+
+## Add Badge to Your GitHub Profile
+
+```markdown
+[![StatsCode](https://api.statscode.dev/badge/YOUR_USERNAME.svg)](https://statscode.dev/profile/YOUR_USERNAME)
 ```
 
 ## Packages
 
-| Package | Description | Version |
-|---------|-------------|---------|
-| `@statscode/core` | Tracking, database, analyzer | 0.1.0 |
-| `@statscode/badges` | Badge definitions & checker | 0.1.0 |
-| `@statscode/plugin-claude-code` | Claude Code hooks | 0.1.0 |
-| `@statscode/plugin-codex` | Codex CLI hooks | 0.1.0 |
-| `@statscode/plugin-antigravity` | Antigravity hooks | 0.1.0 |
-| `@statscode/plugin-opencode` | OpenCode hooks | 0.1.0 |
-| `@statscode/plugin-cursor` | Cursor IDE hooks | 0.1.0 |
+| Package | Description |
+|---------|-------------|
+| `@statscode/core` | Core tracking library |
+| `@statscode/badges` | Badge definitions and checker |
+| `@statscode/api-client` | SDK for cloud sync |
+| `@statscode/plugin-claude-code` | Claude Code integration |
+| `@statscode/plugin-cursor` | Cursor IDE integration |
+| `@statscode/plugin-codex` | OpenAI Codex CLI integration |
+| `@statscode/plugin-antigravity` | Antigravity integration |
+| `@statscode/plugin-opencode` | OpenCode integration |
+
+## Badges
+
+Earn badges based on your coding patterns:
+
+| Badge | Description |
+|-------|-------------|
+| Claude Whisperer | 10+ hours with Claude Code |
+| Cursor Master | 10+ hours with Cursor |
+| Night Owl | Codes late at night |
+| Speed Runner | Fast task completion |
+| Time Lord | 1000+ total hours |
+| Early Adopter | Among first 1000 users |
+
+## Privacy
+
+- All data is stored **locally** by default
+- Cloud sync is **opt-in** only
+- No code or prompts are ever uploaded
+- Only aggregated stats are synced
 
 ## Development
 
 ```bash
-# Build all packages
+git clone https://github.com/srdanirz/statscode
+cd statscode
+npm install
 npm run build
-
-# Run tests
 npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Clean build artifacts
-npm run clean
 ```
-
-## Privacy
-
-All data is stored locally. Nothing is sent to any server unless you explicitly opt-in.
 
 ## Contributing
 

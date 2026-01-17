@@ -1,24 +1,40 @@
 ---
-description: Login to StatsCode cloud to sync and appear on leaderboard
+description: Login to StatsCode with GitHub to sync your stats
 ---
 
 # Login Command
 
-Authenticate with StatsCode to sync your stats to the cloud leaderboard.
+Authenticate with StatsCode using your GitHub account to sync stats and appear on the leaderboard.
 
 ## Usage
 
-Run this command to open browser and login with GitHub.
+Type `/stats:login` to start the authentication flow.
 
-## Flow
+## What Happens
 
-1. Opens browser to StatsCode OAuth page
-2. Login with GitHub
-3. Receive authentication token
-4. Token saved to ~/.statscode/config.json
+1. A browser window opens to `statscode.dev/auth`
+2. You authenticate with GitHub (read-only access)
+3. A token is saved locally to `~/.statscode/config.json`
+4. You're now connected!
 
 ## After Login
 
-- Run `/stats:sync` to upload your local stats
-- Your profile will appear on statscode.dev/profile/[username]
-- You'll be ranked on the global leaderboard
+Once logged in, you can:
+
+- **Sync stats**: `/stats:sync` to upload to leaderboard
+- **View profile**: Visit `statscode.dev/profile/YOUR_USERNAME`
+- **Get badge**: `/stats:badge` for your README
+
+## Privacy
+
+- We only request read-only access to your GitHub profile
+- Your code and prompts are **never** uploaded
+- Only aggregated stats (hours, sessions, badges) are synced
+- You can delete your data anytime at statscode.dev/settings
+
+## Logout
+
+To logout, delete the config file:
+```bash
+rm ~/.statscode/config.json
+```

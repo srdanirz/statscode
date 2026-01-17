@@ -1,25 +1,44 @@
 ---
-description: Generate a badge for your GitHub README
+description: Get a dynamic badge for your GitHub profile README
 ---
 
 # Badge Command
 
-Generate an SVG badge showing your AI coding stats that you can embed in your GitHub README.
+Generate a StatsCode badge to add to your GitHub profile or project README.
 
 ## Usage
 
-Run this command to generate a badge file.
+Type `/stats:badge` to get your personalized badge.
 
 ## Output
 
-Creates a `statscode-badge.svg` file in the current directory that you can:
-1. Commit to your repo
-2. Reference in your README with: `![StatsCode](./statscode-badge.svg)`
+You'll get markdown code to copy:
 
-## Example Badge
+```markdown
+[![StatsCode](https://api.statscode.dev/badge/YOUR_USERNAME.svg)](https://statscode.dev/profile/YOUR_USERNAME)
+```
 
-The badge shows:
-- Total hours tracked
-- Your score
-- Earned badges as icons
-- Verification status
+## What the Badge Shows
+
+The badge displays:
+- Your total tracked hours
+- Your score (0-5)
+
+Example: `StatsCode | 127h | 4.2`
+
+## Requirements
+
+You must be logged in and synced to get a working badge:
+
+1. Run `/stats:login` to authenticate with GitHub
+2. Run `/stats:sync` to upload your stats
+3. Run `/stats:badge` to get your badge URL
+
+## Customization
+
+Badge styles available:
+- `flat` (default)
+- `flat-square`
+- `plastic`
+
+Add `?style=flat-square` to the URL for different styles.
