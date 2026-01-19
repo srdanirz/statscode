@@ -5,7 +5,7 @@
  * to automatically track sessions and interactions.
  */
 
-import { StatsCode, InteractionType } from '@statscode/core';
+import { StatsCode, InteractionType, TrackerEvent } from '@statscode/core';
 import { homedir } from 'os';
 import { join } from 'path';
 
