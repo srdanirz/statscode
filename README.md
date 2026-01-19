@@ -11,8 +11,17 @@ StatsCode tracks how you use AI coding assistants like Claude Code, Cursor, Code
 
 - **Track hours** spent coding with AI
 - **Earn badges** based on your coding style
+- **Receive AI tips** to improve your workflow
 - **Appear on the leaderboard** at statscode.dev
 - **Add a badge to your GitHub profile**
+
+## Features
+
+- 📊 **Metrics**: Auto-tracking of prompts, tokens, and duration.
+- 🤖 **AI Coach**: Real-time pattern recognition and personalized tips.
+- 🏆 **Leaderboard**: Compete globally.
+- 🎖️ **Analysis**: Detect anti-patterns like "short prompts" or "rapid context switching".
+- 🔒 **Privacy**: Code stays local. Only metadata is synced.
 
 ## Quick Start
 
@@ -79,12 +88,15 @@ Earn badges based on your coding patterns:
 
 | Badge | Description |
 |-------|-------------|
-| Claude Whisperer | 10+ hours with Claude Code |
-| Cursor Master | 10+ hours with Cursor |
-| Night Owl | Codes late at night |
-| Speed Runner | Fast task completion |
-| Time Lord | 1000+ total hours |
-| Early Adopter | Among first 1000 users |
+| 🤖 AI Coach | Receive personalized improvement tips |
+| 📎 Context Master | Use @file references effectively |
+| 🎯 One Shot Wonder | High suggestion acceptance rate |
+| 🧘 Zen Coder | Take healthy breaks |
+| 📝 Prompt Engineer | Write detailed prompts |
+| 🌙 Night Owl | Codes late at night |
+| ⚡ Speed Runner | Fast task completion |
+| ⏱️ Time Lord | 1000+ total hours |
+| 🌅 Early Adopter | Among first 1000 users |
 
 ## Privacy
 
