@@ -1,6 +1,6 @@
 {
     "name": "@statscode/plugin-antigravity",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "description": "StatsCode plugin for Antigravity - Track your AI coding stats",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
