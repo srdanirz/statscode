@@ -21,7 +21,7 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "@statscode/core": "^0.2.2"
+        "@statscode/core": "^0.2.3"
     },
     "peerDependencies": {
         "typescript": "^5.0.0"
