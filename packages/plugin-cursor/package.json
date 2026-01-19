@@ -1,6 +1,6 @@
 {
     "name": "@statscode/plugin-cursor",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "StatsCode plugin for Cursor IDE - Track your AI coding stats",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -18,7 +18,7 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "@statscode/core": "file:../core"
+        "@statscode/core": "^0.2.0"
     },
     "peerDependencies": {
         "typescript": "^5.0.0"

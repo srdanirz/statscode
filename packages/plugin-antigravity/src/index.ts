@@ -14,8 +14,21 @@ async function getStatsCode(): Promise<StatsCode> {
     if (!statsCode) {
         statsCode = new StatsCode({
             dbPath: join(homedir(), '.statscode', 'stats.sqlite'),
-            debug: process.env.STATSCODE_DEBUG === 'true'
+            debug: process.env.STATSCODE_DEBUG === 'true',
+            enableTips: true
         });
+
+        // Listen for AI Coach tips
+        statsCode.getTracker().on((event) => {
+            if (event.type === 'tips_received' && Array.isArray(event.data)) {
+                console.log('\n\x1b[36m🤖 AI Coach Tips:\x1b[0m');
+                event.data.forEach((tip: any) => {
+                    console.log(`\x1b[33m• ${tip.text}\x1b[0m`);
+                });
+                console.log('');
+            }
+        });
+
         initPromise = statsCode.ready();
     }
     await initPromise;
