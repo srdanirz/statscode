@@ -17,7 +17,8 @@ export type {
     BadgeCriteria,
     Certificate,
     TrackerEvent,
-    StatsCodeConfig
+    StatsCodeConfig,
+    Tip
 } from './types.js';
 
 // Classes

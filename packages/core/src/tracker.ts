@@ -10,7 +10,8 @@ import {
     AssistantType,
     InteractionType,
     StatsCodeConfig,
-    TrackerEvent
+    TrackerEvent,
+    Tip
 } from './types.js';
 
 export class Tracker {
@@ -58,7 +59,7 @@ export class Tracker {
     }
 
     /** End the current session */
-    endSession(): void {
+    async endSession(): Promise<void> {
         if (!this.currentSessionId) return;
 
         const endTime = new Date();
@@ -71,6 +72,18 @@ export class Tracker {
                 timestamp: endTime,
                 data: session
             });
+
+            // Fetch AI Coach tips if enabled
+            if (this.config.enableTips) {
+                const tips = await this.fetchTips(session);
+                if (tips.length > 0) {
+                    this.emit({
+                        type: 'tips_received',
+                        timestamp: new Date(),
+                        data: tips
+                    });
+                }
+            }
         }
 
         if (this.config.debug) {
@@ -78,6 +91,44 @@ export class Tracker {
         }
 
         this.currentSessionId = null;
+    }
+
+    /** Fetch tips from AI Coach API */
+    private async fetchTips(session: Session): Promise<Tip[]> {
+        const apiUrl = this.config.apiUrl || 'https://api.statscode.dev';
+
+        try {
+            // Calculate session duration in minutes
+            const durationMs = session.endTime
+                ? session.endTime.getTime() - session.startTime.getTime()
+                : 0;
+            const durationMinutes = Math.round(durationMs / 60000);
+
+            // Get interaction counts from this session
+            const interactions = this.db.getSessionInteractions(session.id);
+            const promptCount = interactions.filter((i: Interaction) => i.type === 'prompt').length;
+            const fileRefs = interactions.filter((i: Interaction) => i.toolName?.includes('file')).length;
+
+            const params = new URLSearchParams({
+                tool: session.assistant,
+                duration: String(durationMinutes),
+                promptCount: String(promptCount),
+                filesReferenced: String(fileRefs),
+                compactUsed: 'false',
+                clearUsed: 'false'
+            });
+
+            const response = await fetch(`${apiUrl}/api/tips?${params}`);
+            if (!response.ok) return [];
+
+            const data = await response.json() as { success: boolean; data: Tip[] };
+            return data.data || [];
+        } catch (error) {
+            if (this.config.debug) {
+                console.error('[StatsCode] Failed to fetch tips:', error);
+            }
+            return [];
+        }
     }
 
     /** Record an interaction in the current session */

@@ -95,9 +95,16 @@ export interface Certificate {
 
 /** Event emitted by the tracker */
 export interface TrackerEvent {
-    type: 'session_start' | 'session_end' | 'interaction';
+    type: 'session_start' | 'session_end' | 'interaction' | 'tips_received';
     timestamp: Date;
-    data: Session | Interaction;
+    data: Session | Interaction | Tip[];
+}
+
+/** AI Coach tip */
+export interface Tip {
+    id: string;
+    text: string;
+    source: 'rule' | 'ai';
 }
 
 /** Configuration for StatsCode */
@@ -108,4 +115,8 @@ export interface StatsCodeConfig {
     userId?: string;
     /** Enable debug logging */
     debug?: boolean;
+    /** Enable AI Coach tips at end of session */
+    enableTips?: boolean;
+    /** API URL for StatsCode cloud */
+    apiUrl?: string;
 }
