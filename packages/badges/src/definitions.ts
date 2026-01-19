@@ -168,6 +168,90 @@ export const STYLE_BADGES: BadgeDefinition[] = [
     }
 ];
 
+/** Pattern improvement badges - rewarding good AI coding habits */
+export const IMPROVEMENT_BADGES: BadgeDefinition[] = [
+    {
+        id: 'context-master',
+        name: 'Context Master',
+        description: 'Uses @file references in 80%+ of sessions',
+        category: 'style',
+        icon: '📎',
+        imagePath: 'assets/badge_context_master.png',
+        rarity: 55,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkContextMaster'
+        }
+    },
+    {
+        id: 'zen-coder',
+        name: 'Zen Coder',
+        description: 'Takes regular breaks during long sessions',
+        category: 'style',
+        icon: '🧘',
+        imagePath: 'assets/badge_zen_coder.png',
+        rarity: 50,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkZenCoder'
+        }
+    },
+    {
+        id: 'one-shot-wonder',
+        name: 'One Shot Wonder',
+        description: 'High AI suggestion acceptance rate (70%+)',
+        category: 'style',
+        icon: '🎯',
+        imagePath: 'assets/badge_one_shot_wonder.png',
+        rarity: 60,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkOneShotWonder'
+        }
+    },
+    {
+        id: 'review-champion',
+        name: 'Review Champion',
+        description: 'Uses /review before 90%+ of commits',
+        category: 'style',
+        icon: '✅',
+        imagePath: 'assets/badge_review_champion.png',
+        rarity: 65,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkReviewChampion'
+        }
+    },
+    {
+        id: 'prompt-engineer',
+        name: 'Prompt Engineer',
+        description: 'Provides detailed context in prompts consistently',
+        category: 'style',
+        icon: '📝',
+        imagePath: 'assets/badge_prompt_engineer.png',
+        rarity: 58,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkPromptEngineer'
+        }
+    },
+    {
+        id: 'multi-tool-master',
+        name: 'Multi-Tool Master',
+        description: 'Uses 3+ different AI tools effectively',
+        category: 'style',
+        icon: '🔧',
+        imagePath: 'assets/badge_multi_tool_master.png',
+        rarity: 45,
+        criteria: {
+            type: 'threshold',
+            metric: 'uniqueToolsUsed',
+            operator: '>=',
+            value: 3
+        }
+    }
+];
+
 /** Event/milestone badges */
 export const EVENT_BADGES: BadgeDefinition[] = [
     {
@@ -216,6 +300,7 @@ export const ALL_BADGES: BadgeDefinition[] = [
     ...TOOL_BADGES,
     ...TIERED_BADGES,
     ...STYLE_BADGES,
+    ...IMPROVEMENT_BADGES,
     ...EVENT_BADGES
 ];
 

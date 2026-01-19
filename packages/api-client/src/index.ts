@@ -4,6 +4,7 @@
  */
 
 export { StatsCodeClient, default } from './client.js';
+export type { SessionMetrics, Tip } from './client.js';
 export type {
     User,
     UserStats,

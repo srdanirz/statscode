@@ -153,7 +153,61 @@ export class StatsCodeClient {
         const profileUrl = `https://statscode.dev/profile/${username}`;
         return `[![StatsCode](${badgeUrl})](${profileUrl})`;
     }
+
+    // ─────────────────────────────────────────────────────────
+    // AI Coach Tips
+    // ─────────────────────────────────────────────────────────
+
+    /** Session metrics for AI Coach */
+    async getTips(metrics: SessionMetrics): Promise<Tip[]> {
+        const params = new URLSearchParams({
+            tool: metrics.tool,
+            duration: String(metrics.duration),
+            promptCount: String(metrics.promptCount || 0),
+            filesReferenced: String(metrics.filesReferenced || 0),
+            compactUsed: String(metrics.compactUsed || false),
+            clearUsed: String(metrics.clearUsed || false)
+        });
+
+        if (metrics.approvalMode) {
+            params.set('approvalMode', metrics.approvalMode);
+        }
+        if (metrics.taskBoundariesUsed !== undefined) {
+            params.set('taskBoundariesUsed', String(metrics.taskBoundariesUsed));
+        }
+        if (metrics.inlineAcceptRate !== undefined) {
+            params.set('inlineAcceptRate', String(metrics.inlineAcceptRate));
+        }
+
+        try {
+            const response = await fetch(`${this.apiUrl}/api/tips?${params}`);
+            if (!response.ok) return [];
+            const data = await response.json() as { success: boolean; data: Tip[] };
+            return data.data || [];
+        } catch {
+            return [];
+        }
+    }
 }
 
+/** Session metrics for AI Coach analysis */
+export interface SessionMetrics {
+    tool: string;
+    duration: number; // minutes
+    promptCount?: number;
+    filesReferenced?: number;
+    compactUsed?: boolean;
+    clearUsed?: boolean;
+    approvalMode?: string;
+    taskBoundariesUsed?: number;
+    inlineAcceptRate?: number;
+}
+
+/** AI Coach tip */
+export interface Tip {
+    id: string;
+    text: string;
+    source: 'rule' | 'ai';
+}
 // Default export
 export default StatsCodeClient;
