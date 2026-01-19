@@ -165,6 +165,166 @@ export const STYLE_BADGES: BadgeDefinition[] = [
             type: 'behavior',
             customChecker: 'checkSecurityMinded'
         }
+    },
+    {
+        id: 'marathon-runner',
+        name: 'Marathon Runner',
+        description: 'Completed a continuous 4+ hour session',
+        category: 'style',
+        icon: '🏃',
+        imagePath: 'assets/badge_marathon_runner.png',
+        rarity: 65,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkMarathonRunner'
+        }
+    },
+    {
+        id: 'weekend-warrior',
+        name: 'Weekend Warrior',
+        description: 'Coded >10 hours on a weekend',
+        category: 'style',
+        icon: '⚔️',
+        imagePath: 'assets/badge_weekend_warrior.png',
+        rarity: 50,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkWeekendWarrior'
+        }
+    },
+    {
+        id: 'polyglot',
+        name: 'Polyglot',
+        description: 'Used 3+ programming languages in one week',
+        category: 'style',
+        icon: '🗣️',
+        imagePath: 'assets/badge_polyglot.png',
+        rarity: 85,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkPolyglot'
+        }
+    },
+    {
+        id: 'minimalist',
+        name: 'Minimalist',
+        description: 'Deleted more lines than added in a session',
+        category: 'style',
+        icon: '🧹',
+        imagePath: 'assets/badge_minimalist.png',
+        rarity: 55,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkMinimalist'
+        }
+    },
+    {
+        id: 'chaos-coordinator',
+        name: 'Chaos Coordinator',
+        description: 'Successfully managed 20+ open files',
+        category: 'style',
+        icon: '🌀',
+        imagePath: 'assets/badge_chaos_coordinator.png',
+        rarity: 75,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkChaosCoordinator'
+        }
+    },
+    {
+        id: 'coffee-powered',
+        name: 'Coffee Powered',
+        description: 'First coding session before 6:00 AM',
+        category: 'style',
+        icon: '☕',
+        imagePath: 'assets/badge_coffee_powered.png',
+        rarity: 40,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkCoffeePowered'
+        }
+    }
+];
+
+/** Tactical Mastery Badges - How you solve problems */
+export const TACTICAL_BADGES: BadgeDefinition[] = [
+    {
+        id: 'refactor-ninja',
+        name: 'Refactor Ninja',
+        description: 'Large refactor (>500 lines) with 0 bugs',
+        category: 'style',
+        icon: '🥷',
+        imagePath: 'assets/badge_refactor_ninja.png',
+        rarity: 80,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkRefactorNinja'
+        }
+    },
+    {
+        id: 'bug-hunter',
+        name: 'Bug Hunter',
+        description: 'Resolved 5+ errors in under 10 minutes',
+        category: 'style',
+        icon: '🐞',
+        imagePath: 'assets/badge_bug_hunter.png',
+        rarity: 60,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkBugHunter'
+        }
+    },
+    {
+        id: 'one-shot-sniper',
+        name: 'One Shot Sniper',
+        description: 'Prompt -> Code -> Test Pass -> Commit (1 attempt)',
+        category: 'style',
+        icon: '🔫',
+        imagePath: 'assets/badge_one_shot_sniper.png',
+        rarity: 85,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkOneShotSniper'
+        }
+    },
+    {
+        id: 'documentarian',
+        name: 'Documentarian',
+        description: 'Added >50 lines of documentation in a session',
+        category: 'style',
+        icon: '📚',
+        imagePath: 'assets/badge_documentarian.png',
+        rarity: 45,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkDocumentarian'
+        }
+    },
+    {
+        id: 'vercel-voyager',
+        name: 'Vercel Voyager',
+        description: 'Successfully deployed to Vercel 5+ times',
+        category: 'tool',
+        icon: '▲',
+        imagePath: 'assets/badge_vercel_voyager.png',
+        rarity: 50,
+        criteria: {
+            type: 'event',
+            eventType: 'vercelDeploy'
+        }
+    },
+    {
+        id: 'terminal-titan',
+        name: 'Terminal Titan',
+        description: '90% of time spent in CLI tools',
+        category: 'tool',
+        icon: '📺',
+        imagePath: 'assets/badge_terminal_titan.png',
+        rarity: 65,
+        criteria: {
+            type: 'behavior',
+            customChecker: 'checkTerminalTitan'
+        }
     }
 ];
 
@@ -300,6 +460,7 @@ export const ALL_BADGES: BadgeDefinition[] = [
     ...TOOL_BADGES,
     ...TIERED_BADGES,
     ...STYLE_BADGES,
+    ...TACTICAL_BADGES,
     ...IMPROVEMENT_BADGES,
     ...EVENT_BADGES
 ];
