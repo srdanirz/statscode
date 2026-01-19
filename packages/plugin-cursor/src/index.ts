@@ -5,7 +5,7 @@
  * Can be used as a VS Code extension or standalone
  */
 
-import { StatsCode, InteractionType } from '@statscode/core';
+import { StatsCode, InteractionType, TrackerEvent } from '@statscode/core';
 import { homedir } from 'os';
 import { join } from 'path';
 
@@ -21,7 +21,7 @@ async function getStatsCode(): Promise<StatsCode> {
         });
 
         // Listen for AI Coach tips
-        statsCode.getTracker().on((event) => {
+        statsCode.getTracker().on((event: TrackerEvent) => {
             if (event.type === 'tips_received' && Array.isArray(event.data)) {
                 console.log('\n\x1b[36m🤖 AI Coach Tips:\x1b[0m');
                 event.data.forEach((tip: any) => {
