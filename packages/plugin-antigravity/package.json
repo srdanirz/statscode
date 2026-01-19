@@ -1,6 +1,6 @@
 {
     "name": "@statscode/plugin-antigravity",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "StatsCode plugin for Antigravity - Track your AI coding stats",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -21,7 +21,7 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "@statscode/core": "^0.2.0"
+        "@statscode/core": "^0.2.2"
     },
     "peerDependencies": {
         "typescript": "^5.0.0"
