@@ -6,7 +6,8 @@
     "types": "./dist/hooks/index.d.ts",
     "type": "module",
     "scripts": {
-        "build": "tsc",
+        "build": "node build.mjs",
+        "build:tsc": "tsc",
         "test": "vitest run",
         "prepublishOnly": "npm run build"
     },
@@ -35,5 +36,8 @@
     },
     "peerDependencies": {
         "typescript": "^5.0.0"
+    },
+    "devDependencies": {
+        "esbuild": "^0.21.5"
     }
 }
