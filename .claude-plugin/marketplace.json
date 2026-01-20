@@ -1,0 +1,31 @@
+{
+    "name": "statscode",
+    "description": "Track, analyze, and certify your AI coding assistant usage",
+    "owner": {
+        "name": "StatsCode",
+        "email": "hello@statscode.dev"
+    },
+    "homepage": "https://statscode.dev",
+    "plugins": [
+        {
+            "name": "statscode",
+            "source": "./packages/plugin-claude-code",
+            "description": "📊 Track your AI coding stats - hours, patterns, badges & certificates",
+            "version": "0.3.0",
+            "author": {
+                "name": "StatsCode Contributors"
+            },
+            "homepage": "https://statscode.dev",
+            "repository": "https://github.com/srdanirz/statscode",
+            "license": "MIT",
+            "keywords": [
+                "stats",
+                "tracking",
+                "badges",
+                "ai-coach",
+                "leaderboard"
+            ],
+            "category": "productivity"
+        }
+    ]
+}
