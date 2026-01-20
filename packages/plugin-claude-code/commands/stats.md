@@ -9,7 +9,7 @@ View your local coding statistics tracked by StatsCode.
 
 ## Your Current Stats
 
-!`node "${CLAUDE_PLUGIN_ROOT}/scripts/stats.mjs" 2>&1 || echo "Run more sessions to see stats!"`
+!`node "${CLAUDE_PLUGIN_ROOT}/dist/scripts/stats.mjs" 2>&1 || echo "Run more sessions to see stats!"`
 
 ## Tips
 

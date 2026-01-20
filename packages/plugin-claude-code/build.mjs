@@ -37,13 +37,12 @@ const __dirname = dirname(__filename);
 await esbuild.build({
     entryPoints: ['scripts/stats.mjs'],
     bundle: true,
-    outfile: 'dist/scripts/stats.js',
+    outfile: 'dist/scripts/stats.mjs',
     platform: 'node',
     target: 'node18',
     format: 'esm',
     banner: {
-        js: `#!/usr/bin/env node
-import { createRequire } from 'module';
+        js: `import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 const require = createRequire(import.meta.url);
