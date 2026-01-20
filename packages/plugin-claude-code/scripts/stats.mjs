@@ -45,21 +45,25 @@ async function getStats() {
     const sessionsResult = db.exec('SELECT COUNT(*) as count FROM sessions');
     const totalSessions = sessionsResult[0]?.values[0]?.[0] || 0;
 
-    // Get total hours (Unix timestamps are in milliseconds)
-    // Only count completed sessions + most recent active session
+    // Get total hours from completed sessions only
     const hoursResult = db.exec(`
-        SELECT COALESCE(
-            -- Completed sessions
-            (SELECT SUM(CAST((end_time - start_time) AS REAL) / 3600000)
-             FROM sessions WHERE end_time IS NOT NULL)
-            +
-            -- Most recent active session
-            (SELECT CAST(((strftime('%s', 'now') * 1000) - start_time) AS REAL) / 3600000
-             FROM sessions WHERE end_time IS NULL
-             ORDER BY start_time DESC LIMIT 1)
-        , 0) as hours
+        SELECT COALESCE(SUM(CAST((end_time - start_time) AS REAL) / 3600000), 0) as hours
+        FROM sessions WHERE end_time IS NOT NULL
     `);
     const totalHours = hoursResult[0]?.values[0]?.[0] || 0;
+
+    // Get current session duration (only if it's less than 10 minutes old)
+    const now = Date.now();
+    const currentSessionResult = db.exec(`
+        SELECT start_time
+        FROM sessions WHERE end_time IS NULL
+        ORDER BY start_time DESC LIMIT 1
+    `);
+    let currentSessionMinutes = 0;
+    if (currentSessionResult[0]?.values?.[0]?.[0]) {
+        const startTime = Number(currentSessionResult[0].values[0][0]);
+        currentSessionMinutes = (now - startTime) / 60000;
+    }
 
     // Get total interactions
     const interactionsResult = db.exec('SELECT COUNT(*) as count FROM interactions');
@@ -98,6 +102,12 @@ async function getStats() {
     console.log(`⏱️  Total Hours:        ${Number(totalHours).toFixed(1)}h`);
     console.log(`📝 Total Sessions:     ${totalSessions}`);
     console.log(`🔧 Total Interactions: ${totalInteractions}`);
+    if (currentSessionMinutes > 0) {
+        const hours = Math.floor(currentSessionMinutes / 60);
+        const mins = Math.round(currentSessionMinutes % 60);
+        const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        console.log(`🎯 Current Session:    ${timeStr}`);
+    }
     console.log('');
 
     if (byTypeResult[0]?.values?.length > 0) {

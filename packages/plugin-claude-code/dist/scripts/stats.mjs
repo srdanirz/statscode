@@ -2164,18 +2164,21 @@ async function getStats() {
   const sessionsResult = db.exec("SELECT COUNT(*) as count FROM sessions");
   const totalSessions = sessionsResult[0]?.values[0]?.[0] || 0;
   const hoursResult = db.exec(`
-        SELECT COALESCE(
-            -- Completed sessions
-            (SELECT SUM(CAST((end_time - start_time) AS REAL) / 3600000)
-             FROM sessions WHERE end_time IS NOT NULL)
-            +
-            -- Most recent active session
-            (SELECT CAST(((strftime('%s', 'now') * 1000) - start_time) AS REAL) / 3600000
-             FROM sessions WHERE end_time IS NULL
-             ORDER BY start_time DESC LIMIT 1)
-        , 0) as hours
+        SELECT COALESCE(SUM(CAST((end_time - start_time) AS REAL) / 3600000), 0) as hours
+        FROM sessions WHERE end_time IS NOT NULL
     `);
   const totalHours = hoursResult[0]?.values[0]?.[0] || 0;
+  const now = Date.now();
+  const currentSessionResult = db.exec(`
+        SELECT start_time
+        FROM sessions WHERE end_time IS NULL
+        ORDER BY start_time DESC LIMIT 1
+    `);
+  let currentSessionMinutes = 0;
+  if (currentSessionResult[0]?.values?.[0]?.[0]) {
+    const startTime = Number(currentSessionResult[0].values[0][0]);
+    currentSessionMinutes = (now - startTime) / 6e4;
+  }
   const interactionsResult = db.exec("SELECT COUNT(*) as count FROM interactions");
   const totalInteractions = interactionsResult[0]?.values[0]?.[0] || 0;
   const byTypeResult = db.exec(`
@@ -2205,6 +2208,12 @@ async function getStats() {
   console.log(`\u23F1\uFE0F  Total Hours:        ${Number(totalHours).toFixed(1)}h`);
   console.log(`\u{1F4DD} Total Sessions:     ${totalSessions}`);
   console.log(`\u{1F527} Total Interactions: ${totalInteractions}`);
+  if (currentSessionMinutes > 0) {
+    const hours = Math.floor(currentSessionMinutes / 60);
+    const mins = Math.round(currentSessionMinutes % 60);
+    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    console.log(`\u{1F3AF} Current Session:    ${timeStr}`);
+  }
   console.log("");
   if (byTypeResult[0]?.values?.length > 0) {
     console.log("\u{1F4C8} By Interaction Type:");
