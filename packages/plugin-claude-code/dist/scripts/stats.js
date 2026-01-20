@@ -2152,8 +2152,9 @@ async function getStats() {
   const totalSessions = sessionsResult[0]?.values[0]?.[0] || 0;
   const hoursResult = db.exec(`
         SELECT COALESCE(SUM(
-            (julianday(COALESCE(end_time, datetime('now'))) - julianday(start_time)) * 24
+            CAST((COALESCE(end_time, (strftime('%s', 'now') * 1000)) - start_time) AS REAL) / 3600000
         ), 0) as hours FROM sessions
+        WHERE start_time IS NOT NULL
     `);
   const totalHours = hoursResult[0]?.values[0]?.[0] || 0;
   const interactionsResult = db.exec("SELECT COUNT(*) as count FROM interactions");
@@ -2173,10 +2174,10 @@ async function getStats() {
         LIMIT 5
     `);
   const recentResult = db.exec(`
-        SELECT assistant, start_time, 
-            ROUND((julianday(COALESCE(end_time, datetime('now'))) - julianday(start_time)) * 24 * 60, 1) as minutes
-        FROM sessions 
-        ORDER BY start_time DESC 
+        SELECT assistant, start_time, end_time
+        FROM sessions
+        WHERE start_time IS NOT NULL
+        ORDER BY start_time DESC
         LIMIT 3
     `);
   console.log("");
@@ -2202,9 +2203,21 @@ async function getStats() {
   }
   if (recentResult[0]?.values?.length > 0) {
     console.log("\u{1F550} Recent Sessions:");
-    for (const [assistant, startTime, minutes] of recentResult[0].values) {
-      const date = (/* @__PURE__ */ new Date(startTime + "Z")).toLocaleDateString();
-      console.log(`   \u2022 ${assistant} - ${date} (${minutes}min)`);
+    for (const [assistant, startTime, endTime] of recentResult[0].values) {
+      let date = "Unknown";
+      let duration = "active";
+      if (startTime) {
+        try {
+          date = new Date(Number(startTime)).toLocaleString();
+          if (endTime) {
+            const minutes = Math.round((Number(endTime) - Number(startTime)) / 6e4);
+            duration = `${minutes}min`;
+          }
+        } catch {
+          date = "Unknown";
+        }
+      }
+      console.log(`   \u2022 ${assistant} - ${date} (${duration})`);
     }
     console.log("");
   }
