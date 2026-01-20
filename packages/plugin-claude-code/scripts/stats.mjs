@@ -23,32 +23,17 @@ async function getStats() {
     const buffer = readFileSync(dbPath);
     const db = new SQL.Database(buffer);
 
-    // Close stale sessions (older than 10 minutes without activity)
-    const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
-    db.run(`
-        UPDATE sessions
-        SET end_time = start_time + (10 * 60 * 1000)
-        WHERE end_time IS NULL
-        AND start_time < ${tenMinutesAgo}
-    `);
-
-    // Save changes back to file
-    const data = db.export();
-    const newBuffer = Buffer.from(data);
-    if (newBuffer.length > 0) {
-        import('fs').then(fs => {
-            fs.writeFileSync(dbPath, newBuffer);
-        });
-    }
-
     // Get total sessions
     const sessionsResult = db.exec('SELECT COUNT(*) as count FROM sessions');
     const totalSessions = sessionsResult[0]?.values[0]?.[0] || 0;
 
     // Get total hours from completed sessions only
+    // Ignore sessions longer than 2 hours (likely left open by mistake)
     const hoursResult = db.exec(`
         SELECT COALESCE(SUM(CAST((end_time - start_time) AS REAL) / 3600000), 0) as hours
-        FROM sessions WHERE end_time IS NOT NULL
+        FROM sessions
+        WHERE end_time IS NOT NULL
+        AND (end_time - start_time) <= 7200000
     `);
     const totalHours = hoursResult[0]?.values[0]?.[0] || 0;
 
