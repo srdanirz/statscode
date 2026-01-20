@@ -1,6 +1,6 @@
 {
     "name": "@statscode/core",
-    "version": "0.2.4",
+    "version": "0.3.0",
     "description": "Core tracking and analysis engine for StatsCode",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -18,8 +18,17 @@
         "ai",
         "coding",
         "stats",
-        "tracker"
+        "tracker",
+        "claude-code",
+        "cursor",
+        "codex"
     ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/srdanirz/statscode.git",
+        "directory": "packages/core"
+    },
+    "homepage": "https://statscode.dev",
     "license": "MIT",
     "dependencies": {
         "sql.js": "^1.10.0"

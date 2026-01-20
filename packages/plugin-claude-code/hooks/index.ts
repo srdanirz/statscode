@@ -128,3 +128,73 @@ export async function Stop(): Promise<void> {
 }
 
 export { getStatsCode };
+
+/**
+ * CLI Handler - Called by Claude Code via hooks.json
+ * Reads JSON input from stdin and dispatches to appropriate hook
+ */
+async function main() {
+    const hookName = process.argv[2];
+    if (!hookName) {
+        console.error('Usage: node hooks/index.js <HookName>');
+        process.exit(1);
+    }
+
+    // Read stdin for hook input
+    let input: any = {};
+    try {
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) {
+            chunks.push(chunk);
+        }
+        const rawInput = Buffer.concat(chunks).toString('utf8');
+        if (rawInput.trim()) {
+            input = JSON.parse(rawInput);
+        }
+    } catch (e) {
+        // No stdin or invalid JSON - continue with empty input
+    }
+
+    try {
+        switch (hookName) {
+            case 'PreToolUse':
+                await PreToolUse({
+                    tool_name: input.tool_name || '',
+                    tool_input: input.tool_input || {}
+                });
+                break;
+            case 'PostToolUse':
+                await PostToolUse({
+                    tool_name: input.tool_name || '',
+                    tool_input: input.tool_input || {},
+                    tool_result: input.tool_result || { success: true }
+                });
+                break;
+            case 'OnPrompt':
+                await OnPrompt({ prompt: input.prompt || '' });
+                break;
+            case 'Stop':
+            case 'SessionEnd':
+                await Stop();
+                break;
+            case 'SessionStart':
+                // Just initialize the session
+                const sc = await getStatsCode();
+                const tracker = sc.getTracker();
+                if (!tracker.hasActiveSession()) {
+                    tracker.startSession('claude-code', input.cwd || process.cwd());
+                }
+                break;
+            default:
+                console.error(`Unknown hook: ${hookName}`);
+                process.exit(1);
+        }
+        process.exit(0);
+    } catch (error) {
+        console.error(`Hook ${hookName} failed:`, error);
+        process.exit(1);
+    }
+}
+
+// Run CLI handler
+main();

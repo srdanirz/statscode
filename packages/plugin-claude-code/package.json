@@ -1,9 +1,9 @@
 {
     "name": "@statscode/plugin-claude-code",
-    "version": "0.2.4",
+    "version": "0.3.0",
     "description": "StatsCode plugin for Claude Code - Track your AI coding stats",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
+    "main": "./dist/hooks/index.js",
+    "types": "./dist/hooks/index.d.ts",
     "type": "module",
     "scripts": {
         "build": "tsc",
@@ -11,17 +11,27 @@
         "prepublishOnly": "npm run build"
     },
     "files": [
-        "dist"
+        "dist",
+        "hooks/hooks.json",
+        "commands",
+        ".claude-plugin"
     ],
     "keywords": [
         "statscode",
         "claude-code",
         "plugin",
-        "ai-stats"
+        "ai-stats",
+        "anthropic"
     ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/srdanirz/statscode.git",
+        "directory": "packages/plugin-claude-code"
+    },
+    "homepage": "https://statscode.dev",
     "license": "MIT",
     "dependencies": {
-        "@statscode/core": "^0.2.4"
+        "@statscode/core": "^0.3.0"
     },
     "peerDependencies": {
         "typescript": "^5.0.0"
