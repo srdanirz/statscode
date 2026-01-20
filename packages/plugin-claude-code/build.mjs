@@ -7,7 +7,6 @@ await esbuild.build({
     platform: 'node',
     target: 'node18',
     format: 'esm',
-    external: ['sql.js'],  // Keep sql.js external, it's complex
     banner: {
         js: `
 import { createRequire } from 'module';
@@ -21,3 +20,4 @@ const __dirname = dirname(__filename);
 });
 
 console.log('✅ Bundle created successfully!');
+
