@@ -2166,15 +2166,42 @@ async function getStats() {
     totalActiveMs += activityThresholdMs;
   }
   const totalHours = totalActiveMs / 36e5;
-  const lastInteractionResult = db.exec(`
-        SELECT timestamp
+  const currentSessionResult = db.exec(`
+        SELECT MIN(timestamp) as first_interaction, MAX(timestamp) as last_interaction
         FROM interactions
-        ORDER BY timestamp DESC LIMIT 1
+        WHERE session_id = (
+            SELECT id FROM sessions
+            WHERE end_time IS NULL
+            ORDER BY start_time DESC LIMIT 1
+        )
     `);
+  let currentSessionActivityMs = 0;
   let minutesSinceLastActivity = 0;
-  if (lastInteractionResult[0]?.values?.[0]?.[0]) {
-    const lastTimestamp = Number(lastInteractionResult[0].values[0][0]);
-    minutesSinceLastActivity = (Date.now() - lastTimestamp) / 6e4;
+  if (currentSessionResult[0]?.values?.[0]) {
+    const [firstInteraction, lastInteraction] = currentSessionResult[0].values[0];
+    if (firstInteraction && lastInteraction) {
+      const first = Number(firstInteraction);
+      const last = Number(lastInteraction);
+      const sessionInteractions = db.exec(`
+                SELECT timestamp
+                FROM interactions
+                WHERE session_id = (
+                    SELECT id FROM sessions
+                    WHERE end_time IS NULL
+                    ORDER BY start_time DESC LIMIT 1
+                )
+                ORDER BY timestamp ASC
+            `);
+      if (sessionInteractions[0]?.values?.length > 0) {
+        const timestamps = sessionInteractions[0].values.map((row) => Number(row[0]));
+        for (let i = 1; i < timestamps.length; i++) {
+          const gap = timestamps[i] - timestamps[i - 1];
+          currentSessionActivityMs += Math.min(gap, activityThresholdMs);
+        }
+        currentSessionActivityMs += activityThresholdMs;
+      }
+      minutesSinceLastActivity = (Date.now() - last) / 6e4;
+    }
   }
   const interactionsResult = db.exec("SELECT COUNT(*) as count FROM interactions");
   const totalInteractions = interactionsResult[0]?.values[0]?.[0] || 0;
@@ -2205,10 +2232,17 @@ async function getStats() {
   console.log(`\u23F1\uFE0F  Active Hours:       ${Number(totalHours).toFixed(1)}h`);
   console.log(`\u{1F4DD} Total Sessions:     ${totalSessions}`);
   console.log(`\u{1F527} Total Interactions: ${totalInteractions}`);
-  if (minutesSinceLastActivity < 5) {
-    console.log(`\u{1F7E2} Status:             Active now`);
-  } else if (minutesSinceLastActivity < 60) {
-    console.log(`\u{1F7E1} Last Activity:      ${Math.round(minutesSinceLastActivity)}m ago`);
+  if (currentSessionActivityMs > 0) {
+    const sessionMinutes = currentSessionActivityMs / 6e4;
+    const hours = Math.floor(sessionMinutes / 60);
+    const mins = Math.round(sessionMinutes % 60);
+    if (minutesSinceLastActivity < 5) {
+      const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      console.log(`\u{1F7E2} Current Session:    ${timeStr} (active)`);
+    } else if (minutesSinceLastActivity < 60) {
+      const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      console.log(`\u{1F7E1} Current Session:    ${timeStr} (${Math.round(minutesSinceLastActivity)}m idle)`);
+    }
   }
   console.log("");
   if (byTypeResult[0]?.values?.length > 0) {

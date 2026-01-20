@@ -54,16 +54,52 @@ async function getStats() {
 
     const totalHours = totalActiveMs / 3600000;
 
-    // Get time since last interaction
-    const lastInteractionResult = db.exec(`
-        SELECT timestamp
+    // Get current session activity time
+    const currentSessionResult = db.exec(`
+        SELECT MIN(timestamp) as first_interaction, MAX(timestamp) as last_interaction
         FROM interactions
-        ORDER BY timestamp DESC LIMIT 1
+        WHERE session_id = (
+            SELECT id FROM sessions
+            WHERE end_time IS NULL
+            ORDER BY start_time DESC LIMIT 1
+        )
     `);
+
+    let currentSessionActivityMs = 0;
     let minutesSinceLastActivity = 0;
-    if (lastInteractionResult[0]?.values?.[0]?.[0]) {
-        const lastTimestamp = Number(lastInteractionResult[0].values[0][0]);
-        minutesSinceLastActivity = (Date.now() - lastTimestamp) / 60000;
+
+    if (currentSessionResult[0]?.values?.[0]) {
+        const [firstInteraction, lastInteraction] = currentSessionResult[0].values[0];
+        if (firstInteraction && lastInteraction) {
+            const first = Number(firstInteraction);
+            const last = Number(lastInteraction);
+
+            // Get all interactions in current session
+            const sessionInteractions = db.exec(`
+                SELECT timestamp
+                FROM interactions
+                WHERE session_id = (
+                    SELECT id FROM sessions
+                    WHERE end_time IS NULL
+                    ORDER BY start_time DESC LIMIT 1
+                )
+                ORDER BY timestamp ASC
+            `);
+
+            if (sessionInteractions[0]?.values?.length > 0) {
+                const timestamps = sessionInteractions[0].values.map(row => Number(row[0]));
+
+                for (let i = 1; i < timestamps.length; i++) {
+                    const gap = timestamps[i] - timestamps[i-1];
+                    currentSessionActivityMs += Math.min(gap, activityThresholdMs);
+                }
+
+                // Add threshold time for last interaction
+                currentSessionActivityMs += activityThresholdMs;
+            }
+
+            minutesSinceLastActivity = (Date.now() - last) / 60000;
+        }
     }
 
     // Get total interactions
@@ -103,10 +139,19 @@ async function getStats() {
     console.log(`⏱️  Active Hours:       ${Number(totalHours).toFixed(1)}h`);
     console.log(`📝 Total Sessions:     ${totalSessions}`);
     console.log(`🔧 Total Interactions: ${totalInteractions}`);
-    if (minutesSinceLastActivity < 5) {
-        console.log(`🟢 Status:             Active now`);
-    } else if (minutesSinceLastActivity < 60) {
-        console.log(`🟡 Last Activity:      ${Math.round(minutesSinceLastActivity)}m ago`);
+
+    if (currentSessionActivityMs > 0) {
+        const sessionMinutes = currentSessionActivityMs / 60000;
+        const hours = Math.floor(sessionMinutes / 60);
+        const mins = Math.round(sessionMinutes % 60);
+
+        if (minutesSinceLastActivity < 5) {
+            const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+            console.log(`🟢 Current Session:    ${timeStr} (active)`);
+        } else if (minutesSinceLastActivity < 60) {
+            const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+            console.log(`🟡 Current Session:    ${timeStr} (${Math.round(minutesSinceLastActivity)}m idle)`);
+        }
     }
     console.log('');
 
