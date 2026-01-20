@@ -2147,13 +2147,33 @@ async function getStats() {
   const SQL = await (0, import_sql.default)();
   const buffer = readFileSync(dbPath);
   const db = new SQL.Database(buffer);
+  const tenMinutesAgo = Date.now() - 10 * 60 * 1e3;
+  db.run(`
+        UPDATE sessions
+        SET end_time = start_time + (10 * 60 * 1000)
+        WHERE end_time IS NULL
+        AND start_time < ${tenMinutesAgo}
+    `);
+  const data = db.export();
+  const newBuffer = Buffer.from(data);
+  if (newBuffer.length > 0) {
+    import("fs").then((fs) => {
+      fs.writeFileSync(dbPath, newBuffer);
+    });
+  }
   const sessionsResult = db.exec("SELECT COUNT(*) as count FROM sessions");
   const totalSessions = sessionsResult[0]?.values[0]?.[0] || 0;
   const hoursResult = db.exec(`
-        SELECT COALESCE(SUM(
-            CAST((COALESCE(end_time, (strftime('%s', 'now') * 1000)) - start_time) AS REAL) / 3600000
-        ), 0) as hours FROM sessions
-        WHERE start_time IS NOT NULL
+        SELECT COALESCE(
+            -- Completed sessions
+            (SELECT SUM(CAST((end_time - start_time) AS REAL) / 3600000)
+             FROM sessions WHERE end_time IS NOT NULL)
+            +
+            -- Most recent active session
+            (SELECT CAST(((strftime('%s', 'now') * 1000) - start_time) AS REAL) / 3600000
+             FROM sessions WHERE end_time IS NULL
+             ORDER BY start_time DESC LIMIT 1)
+        , 0) as hours
     `);
   const totalHours = hoursResult[0]?.values[0]?.[0] || 0;
   const interactionsResult = db.exec("SELECT COUNT(*) as count FROM interactions");
