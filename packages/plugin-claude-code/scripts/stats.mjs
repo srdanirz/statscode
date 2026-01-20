@@ -1,0 +1,108 @@
+#!/usr/bin/env node
+/**
+ * StatsCode CLI - Display stats from local database
+ */
+
+import initSqlJs from 'sql.js';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
+
+const dbPath = join(homedir(), '.statscode', 'stats.sqlite');
+
+async function getStats() {
+    if (!existsSync(dbPath)) {
+        console.log('📊 StatsCode Stats');
+        console.log('═══════════════════════════════════════');
+        console.log('No stats yet! Start coding with Claude Code.');
+        console.log('Your sessions will be tracked automatically.');
+        return;
+    }
+
+    const SQL = await initSqlJs();
+    const buffer = readFileSync(dbPath);
+    const db = new SQL.Database(buffer);
+
+    // Get total sessions
+    const sessionsResult = db.exec('SELECT COUNT(*) as count FROM sessions');
+    const totalSessions = sessionsResult[0]?.values[0]?.[0] || 0;
+
+    // Get total hours
+    const hoursResult = db.exec(`
+        SELECT COALESCE(SUM(
+            (julianday(COALESCE(end_time, datetime('now'))) - julianday(start_time)) * 24
+        ), 0) as hours FROM sessions
+    `);
+    const totalHours = hoursResult[0]?.values[0]?.[0] || 0;
+
+    // Get total interactions
+    const interactionsResult = db.exec('SELECT COUNT(*) as count FROM interactions');
+    const totalInteractions = interactionsResult[0]?.values[0]?.[0] || 0;
+
+    // Get interactions by type
+    const byTypeResult = db.exec(`
+        SELECT type, COUNT(*) as count 
+        FROM interactions 
+        GROUP BY type 
+        ORDER BY count DESC
+    `);
+
+    // Get tool usage
+    const toolsResult = db.exec(`
+        SELECT tool_name, COUNT(*) as count 
+        FROM interactions 
+        WHERE tool_name IS NOT NULL AND tool_name != ''
+        GROUP BY tool_name 
+        ORDER BY count DESC 
+        LIMIT 5
+    `);
+
+    // Get recent sessions
+    const recentResult = db.exec(`
+        SELECT assistant, start_time, 
+            ROUND((julianday(COALESCE(end_time, datetime('now'))) - julianday(start_time)) * 24 * 60, 1) as minutes
+        FROM sessions 
+        ORDER BY start_time DESC 
+        LIMIT 3
+    `);
+
+    console.log('');
+    console.log('📊 StatsCode Stats');
+    console.log('═══════════════════════════════════════');
+    console.log(`⏱️  Total Hours:        ${Number(totalHours).toFixed(1)}h`);
+    console.log(`📝 Total Sessions:     ${totalSessions}`);
+    console.log(`🔧 Total Interactions: ${totalInteractions}`);
+    console.log('');
+
+    if (byTypeResult[0]?.values?.length > 0) {
+        console.log('📈 By Interaction Type:');
+        for (const [type, count] of byTypeResult[0].values) {
+            console.log(`   • ${type}: ${count}`);
+        }
+        console.log('');
+    }
+
+    if (toolsResult[0]?.values?.length > 0) {
+        console.log('🛠️  Top Tools Used:');
+        for (const [tool, count] of toolsResult[0].values) {
+            console.log(`   • ${tool}: ${count}`);
+        }
+        console.log('');
+    }
+
+    if (recentResult[0]?.values?.length > 0) {
+        console.log('🕐 Recent Sessions:');
+        for (const [assistant, startTime, minutes] of recentResult[0].values) {
+            const date = new Date(startTime + 'Z').toLocaleDateString();
+            console.log(`   • ${assistant} - ${date} (${minutes}min)`);
+        }
+        console.log('');
+    }
+
+    console.log('═══════════════════════════════════════');
+    console.log('🔗 statscode.dev');
+
+    db.close();
+}
+
+getStats().catch(console.error);
