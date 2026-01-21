@@ -42,7 +42,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var require_sql_wasm = __commonJS({
   "../../node_modules/sql.js/dist/sql-wasm.js"(exports, module) {
     var initSqlJsPromise = void 0;
-    var initSqlJs2 = function(moduleConfig) {
+    var initSqlJs3 = function(moduleConfig) {
       if (initSqlJsPromise) {
         return initSqlJsPromise;
       }
@@ -2118,14 +2118,14 @@ var require_sql_wasm = __commonJS({
       return initSqlJsPromise;
     };
     if (typeof exports === "object" && typeof module === "object") {
-      module.exports = initSqlJs2;
-      module.exports.default = initSqlJs2;
+      module.exports = initSqlJs3;
+      module.exports.default = initSqlJs3;
     } else if (typeof define === "function" && define["amd"]) {
       define([], function() {
-        return initSqlJs2;
+        return initSqlJs3;
       });
     } else if (typeof exports === "object") {
-      exports["Module"] = initSqlJs2;
+      exports["Module"] = initSqlJs3;
     }
   }
 });
@@ -2937,14 +2937,297 @@ var StatsCode = class {
 };
 
 // hooks/index.ts
+import { homedir as homedir3 } from "os";
+import { join as join3 } from "path";
+
+// ../api-client/dist/client.js
+var DEFAULT_API_URL = "https://api.statscode.dev";
+var StatsCodeClient = class {
+  apiUrl;
+  token = null;
+  constructor(options = {}) {
+    this.apiUrl = options.apiUrl || DEFAULT_API_URL;
+  }
+  /** Set authentication token */
+  setToken(token) {
+    this.token = token;
+  }
+  /** Clear authentication */
+  clearToken() {
+    this.token = null;
+  }
+  /** Check if authenticated */
+  isAuthenticated() {
+    return this.token !== null;
+  }
+  /** Get auth headers */
+  getHeaders() {
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`;
+    }
+    return headers;
+  }
+  // ─────────────────────────────────────────────────────────
+  // Auth
+  // ─────────────────────────────────────────────────────────
+  /** Get OAuth URL to start login flow */
+  getLoginUrl() {
+    return `${this.apiUrl}/api/auth/github`;
+  }
+  /** Exchange token and get user info */
+  async validateToken(token) {
+    try {
+      const response = await fetch(`${this.apiUrl}/api/auth/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      if (!response.ok)
+        return null;
+      const data = await response.json();
+      return data;
+    } catch {
+      return null;
+    }
+  }
+  // ─────────────────────────────────────────────────────────
+  // Stats
+  // ─────────────────────────────────────────────────────────
+  /** Sync local stats to cloud */
+  async syncStats(stats) {
+    if (!this.token) {
+      throw new Error("Not authenticated. Call setToken() first.");
+    }
+    const response = await fetch(`${this.apiUrl}/api/stats/sync`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(stats)
+    });
+    if (!response.ok) {
+      throw new Error(`Sync failed: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data;
+  }
+  /** Get current user stats */
+  async getMyStats() {
+    if (!this.token)
+      return null;
+    const response = await fetch(`${this.apiUrl}/api/stats/me`, {
+      headers: this.getHeaders()
+    });
+    if (!response.ok)
+      return null;
+    const data = await response.json();
+    return data;
+  }
+  // ─────────────────────────────────────────────────────────
+  // Users
+  // ─────────────────────────────────────────────────────────
+  /** Get public user profile */
+  async getUser(username) {
+    const response = await fetch(`${this.apiUrl}/api/users/${username}`);
+    if (!response.ok)
+      return null;
+    const data = await response.json();
+    return data;
+  }
+  // ─────────────────────────────────────────────────────────
+  // Leaderboard
+  // ─────────────────────────────────────────────────────────
+  /** Get leaderboard */
+  async getLeaderboard(options = {}) {
+    const params = new URLSearchParams();
+    if (options.limit)
+      params.set("limit", String(options.limit));
+    if (options.offset)
+      params.set("offset", String(options.offset));
+    const response = await fetch(`${this.apiUrl}/api/leaderboard?${params}`);
+    const data = await response.json();
+    return data;
+  }
+  // ─────────────────────────────────────────────────────────
+  // Badge
+  // ─────────────────────────────────────────────────────────
+  /** Get dynamic badge URL for GitHub README */
+  getBadgeUrl(username) {
+    return `${this.apiUrl}/badge/${username}.svg`;
+  }
+  /** Get badge markdown for GitHub README */
+  getBadgeMarkdown(username) {
+    const badgeUrl = this.getBadgeUrl(username);
+    const profileUrl = `https://statscode.dev/profile/${username}`;
+    return `[![StatsCode](${badgeUrl})](${profileUrl})`;
+  }
+  // ─────────────────────────────────────────────────────────
+  // AI Coach Tips
+  // ─────────────────────────────────────────────────────────
+  /** Session metrics for AI Coach */
+  async getTips(metrics) {
+    const params = new URLSearchParams({
+      tool: metrics.tool,
+      duration: String(metrics.duration),
+      promptCount: String(metrics.promptCount || 0),
+      filesReferenced: String(metrics.filesReferenced || 0),
+      compactUsed: String(metrics.compactUsed || false),
+      clearUsed: String(metrics.clearUsed || false)
+    });
+    if (metrics.approvalMode) {
+      params.set("approvalMode", metrics.approvalMode);
+    }
+    if (metrics.taskBoundariesUsed !== void 0) {
+      params.set("taskBoundariesUsed", String(metrics.taskBoundariesUsed));
+    }
+    if (metrics.inlineAcceptRate !== void 0) {
+      params.set("inlineAcceptRate", String(metrics.inlineAcceptRate));
+    }
+    try {
+      const response = await fetch(`${this.apiUrl}/api/tips?${params}`);
+      if (!response.ok)
+        return [];
+      const data = await response.json();
+      return data.data || [];
+    } catch {
+      return [];
+    }
+  }
+};
+
+// hooks/auto-sync.ts
+var import_sql2 = __toESM(require_sql_wasm(), 1);
 import { homedir as homedir2 } from "os";
 import { join as join2 } from "path";
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "fs";
+var CONFIG_PATH = join2(homedir2(), ".statscode", "config.json");
+var DB_PATH = join2(homedir2(), ".statscode", "stats.sqlite");
+function readConfig() {
+  try {
+    if (!existsSync2(CONFIG_PATH)) {
+      return {};
+    }
+    const content = readFileSync2(CONFIG_PATH, "utf-8");
+    return JSON.parse(content);
+  } catch {
+    return {};
+  }
+}
+async function calculateStats() {
+  if (!existsSync2(DB_PATH)) {
+    return null;
+  }
+  try {
+    const SQL = await (0, import_sql2.default)();
+    const buffer = readFileSync2(DB_PATH);
+    const db = new SQL.Database(buffer);
+    const sessionsResult = db.exec("SELECT COUNT(*) as count FROM sessions");
+    const totalSessions = sessionsResult[0]?.values[0]?.[0] || 0;
+    const interactionsResult = db.exec("SELECT COUNT(*) as count FROM interactions");
+    const totalInteractions = interactionsResult[0]?.values[0]?.[0] || 0;
+    const activityThresholdMs = 5 * 60 * 1e3;
+    const interactionTimestamps = db.exec(`
+            SELECT timestamp
+            FROM interactions
+            ORDER BY timestamp ASC
+        `);
+    let totalActiveMs = 0;
+    if (interactionTimestamps[0]?.values?.length > 0) {
+      const timestamps = interactionTimestamps[0].values.map((row) => Number(row[0]));
+      for (let i = 1; i < timestamps.length; i++) {
+        const gap = timestamps[i] - timestamps[i - 1];
+        const activeTime = Math.min(gap, activityThresholdMs);
+        totalActiveMs += activeTime;
+      }
+      totalActiveMs += activityThresholdMs;
+    }
+    const totalHours = totalActiveMs / 36e5;
+    const byToolResult = db.exec(`
+            SELECT
+                s.assistant as tool,
+                COUNT(DISTINCT s.id) as sessions
+            FROM sessions s
+            GROUP BY s.assistant
+        `);
+    const byTool = {};
+    if (byToolResult[0]?.values?.length > 0) {
+      for (const [tool, sessions] of byToolResult[0].values) {
+        const toolInteractions = db.exec(`
+                    SELECT i.timestamp
+                    FROM interactions i
+                    JOIN sessions s ON i.session_id = s.id
+                    WHERE s.assistant = ?
+                    ORDER BY i.timestamp ASC
+                `, [tool]);
+        let toolActiveMs = 0;
+        if (toolInteractions[0]?.values?.length > 0) {
+          const timestamps = toolInteractions[0].values.map((row) => Number(row[0]));
+          for (let i = 1; i < timestamps.length; i++) {
+            const gap = timestamps[i] - timestamps[i - 1];
+            const activeTime = Math.min(gap, activityThresholdMs);
+            toolActiveMs += activeTime;
+          }
+          toolActiveMs += activityThresholdMs;
+        }
+        byTool[tool] = {
+          hours: toolActiveMs / 36e5,
+          sessions: Number(sessions)
+        };
+      }
+    }
+    const score = Math.min(
+      totalHours / 100 * 2 + // Up to 2 points for hours
+      totalSessions / 50 * 2 + // Up to 2 points for consistency
+      Object.keys(byTool).length * 0.2,
+      // Up to 1 point for multi-tool usage
+      5
+    );
+    db.close();
+    return {
+      totalHours: Number(totalHours.toFixed(2)),
+      totalSessions,
+      totalInteractions,
+      byTool,
+      badges: [],
+      // Badges will be calculated server-side
+      score: Number(score.toFixed(1))
+    };
+  } catch (error) {
+    console.error("[auto-sync] Failed to calculate stats:", error);
+    return null;
+  }
+}
+async function autoSync() {
+  try {
+    const config = readConfig();
+    if (config.autoSync === false) {
+      return;
+    }
+    if (!config.token) {
+      return;
+    }
+    const stats = await calculateStats();
+    if (!stats) {
+      return;
+    }
+    const client = new StatsCodeClient();
+    client.setToken(config.token);
+    await client.syncStats(stats);
+  } catch (error) {
+    if (process.env.STATSCODE_DEBUG === "true") {
+      console.error("[auto-sync] Failed:", error);
+    }
+  }
+}
+
+// hooks/index.ts
 var statsCode = null;
 var initPromise = null;
 async function getStatsCode() {
   if (!statsCode) {
     statsCode = new StatsCode({
-      dbPath: join2(homedir2(), ".statscode", "stats.sqlite"),
+      dbPath: join3(homedir3(), ".statscode", "stats.sqlite"),
       debug: process.env.STATSCODE_DEBUG === "true",
       enableTips: true
     });
@@ -3002,6 +3285,7 @@ async function Stop() {
   if (!statsCode) return;
   const tracker = statsCode.getTracker();
   tracker.endSession();
+  await autoSync();
   statsCode.close();
   statsCode = null;
   initPromise = null;

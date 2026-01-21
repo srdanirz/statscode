@@ -8,6 +8,7 @@
 import { StatsCode, InteractionType, TrackerEvent } from '@statscode/core';
 import { homedir } from 'os';
 import { join } from 'path';
+import { autoSync } from './auto-sync.js';
 
 // Global tracker instance
 let statsCode: StatsCode | null = null;
@@ -122,6 +123,10 @@ export async function Stop(): Promise<void> {
 
     const tracker = statsCode.getTracker();
     tracker.endSession();
+
+    // Auto-sync stats to cloud (silently fails if not authenticated)
+    await autoSync();
+
     statsCode.close();
     statsCode = null;
     initPromise = null;
