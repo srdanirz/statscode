@@ -1,15 +1,17 @@
 ---
 description: Login to StatsCode with GitHub to sync your stats
-handler: scripts/login.mjs
+allowed-tools: Bash(node:*)
 ---
 
 # Login Command
 
 Authenticate with StatsCode using your GitHub account to sync stats and appear on the leaderboard.
 
-## Usage
+## Authenticating...
 
-Type `/statscode:login` to start the authentication flow.
+!`node "${CLAUDE_PLUGIN_ROOT}/dist/scripts/login.mjs" 2>&1`
+
+## What Just Happened
 
 ## What Happens
 
