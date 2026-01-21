@@ -43,7 +43,7 @@ User codes with Claude Code
     ↓
 Hooks track interactions → LOCAL: ~/.statscode/stats.sqlite
     ↓
-SessionEnd hook (manual /statscode:sync)
+SessionEnd hook (manual /statscode:force-sync)
     ↓
 POST /api/stats/sync (with JWT token)
     ↓
@@ -121,7 +121,7 @@ Public profile visible at statscode.dev/@username
 |---------|--------|------|
 | `/statscode:login` | ✅ | `commands/login.md` |
 | `/statscode:stats` | ✅ | `commands/stats.md` + `scripts/stats.mjs` |
-| `/statscode:sync` | ✅ | `commands/sync.md` |
+| `/statscode:force-sync` | ✅ | `commands/sync.md` |
 | `/statscode:badge` | ✅ | `commands/badge.md` |
 | `/statscode:export` | ✅ | `commands/export.md` |
 
@@ -148,7 +148,7 @@ Public profile visible at statscode.dev/@username
    - Impact: HIGH
 
 2. **Auto-Sync Post-Session**
-   - Current: Manual `/statscode:sync` required
+   - Current: Manual `/statscode:force-sync` required
    - Needed: Auto-sync in `SessionEnd` hook
    - Complexity: MEDIUM (3 hours)
    - Impact: HIGH
@@ -538,7 +538,7 @@ hooks/
 commands/
   stats.md             # /stats command
   login.md             # /statscode:login
-  sync.md              # /statscode:sync
+  sync.md              # /statscode:force-sync
   badge.md             # /statscode:badge
 
 scripts/
@@ -606,7 +606,7 @@ NEXT_PUBLIC_API_URL=https://api.statscode.dev
 - [ ] Auto-sync works after session ends
 - [ ] Token refreshes automatically when near expiration
 - [ ] Stats appear on statscode.dev within seconds
-- [ ] No manual `/statscode:sync` required
+- [ ] No manual `/statscode:force-sync` required
 
 ### Phase 2
 
@@ -621,7 +621,7 @@ NEXT_PUBLIC_API_URL=https://api.statscode.dev
 ## 📊 SUCCESS METRICS
 
 **Before (Current):**
-- Manual sync required: `/statscode:sync`
+- Manual sync required: `/statscode:force-sync`
 - Profile data: Mock/hardcoded
 - Tips: Only in `/stats` command
 - Badges: No notifications

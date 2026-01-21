@@ -33,10 +33,11 @@ cd ~/.claude/plugins
 git clone https://github.com/srdanirz/statscode
 
 # Use the commands:
-# /stats        - View your local statistics
-# /statscode:login  - Connect to leaderboard (optional)
-# /statscode:sync   - Upload stats to cloud
+# /statscode:login  - Connect to leaderboard
+# /statscode:stats  - View your local statistics
 # /statscode:badge  - Get badge for your README
+# 
+# Stats sync automatically - no manual sync needed!
 ```
 
 ### For Other Tools
