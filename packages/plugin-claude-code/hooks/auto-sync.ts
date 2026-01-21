@@ -3,11 +3,21 @@
  * Automatically syncs local stats to StatsCode cloud after each session
  */
 
-import { StatsCodeClient, SyncPayload } from '@statscode/api-client';
+import { StatsCodeClient } from '@statscode/api-client';
 import { homedir } from 'os';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import initSqlJs from 'sql.js';
+
+// Define SyncPayload inline to avoid import issues with bundler
+interface SyncPayload {
+    totalHours: number;
+    totalSessions: number;
+    totalInteractions: number;
+    byTool: Record<string, { hours: number; sessions: number }>;
+    badges: string[];
+    score: number;
+}
 
 const CONFIG_PATH = join(homedir(), '.statscode', 'config.json');
 const DB_PATH = join(homedir(), '.statscode', 'stats.sqlite');
