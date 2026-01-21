@@ -8,7 +8,7 @@ Generate a StatsCode badge to add to your GitHub profile or project README.
 
 ## Usage
 
-Type `/stats:badge` to get your personalized badge.
+Type `/statscode:badge` to get your personalized badge.
 
 ## Output
 
@@ -30,9 +30,9 @@ Example: `StatsCode | 127h | 4.2`
 
 You must be logged in and synced to get a working badge:
 
-1. Run `/stats:login` to authenticate with GitHub
-2. Run `/stats:sync` to upload your stats
-3. Run `/stats:badge` to get your badge URL
+1. Run `/statscode:login` to authenticate with GitHub
+2. Run `/statscode:sync` to upload your stats
+3. Run `/statscode:badge` to get your badge URL
 
 ## Customization
 

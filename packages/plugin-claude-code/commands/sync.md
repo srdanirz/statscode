@@ -8,11 +8,11 @@ Upload your local statistics to appear on the StatsCode global leaderboard.
 
 ## Usage
 
-Type `/stats:sync` to sync your stats.
+Type `/statscode:sync` to sync your stats.
 
 ## Requirements
 
-You must be logged in first. Run `/stats:login` if you haven't.
+You must be logged in first. Run `/statscode:login` if you haven't.
 
 ## What Gets Synced
 

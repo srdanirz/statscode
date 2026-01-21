@@ -34,9 +34,9 @@ git clone https://github.com/srdanirz/statscode
 
 # Use the commands:
 # /stats        - View your local statistics
-# /stats:login  - Connect to leaderboard (optional)
-# /stats:sync   - Upload stats to cloud
-# /stats:badge  - Get badge for your README
+# /statscode:login  - Connect to leaderboard (optional)
+# /statscode:sync   - Upload stats to cloud
+# /statscode:badge  - Get badge for your README
 ```
 
 ### For Other Tools

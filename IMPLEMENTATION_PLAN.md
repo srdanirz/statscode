@@ -43,7 +43,7 @@ User codes with Claude Code
     ↓
 Hooks track interactions → LOCAL: ~/.statscode/stats.sqlite
     ↓
-SessionEnd hook (manual /stats:sync)
+SessionEnd hook (manual /statscode:sync)
     ↓
 POST /api/stats/sync (with JWT token)
     ↓
@@ -57,7 +57,7 @@ Public profile visible at statscode.dev/@username
 ### Authentication Flow
 
 ```
-1. User runs: /stats:login
+1. User runs: /statscode:login
 2. Opens browser → api.statscode.dev/api/auth/github
 3. GitHub OAuth → callback with code
 4. Backend exchanges code for GitHub access_token
@@ -119,11 +119,11 @@ Public profile visible at statscode.dev/@username
 
 | Command | Status | File |
 |---------|--------|------|
-| `/stats:login` | ✅ | `commands/login.md` |
-| `/stats:stats` | ✅ | `commands/stats.md` + `scripts/stats.mjs` |
-| `/stats:sync` | ✅ | `commands/sync.md` |
-| `/stats:badge` | ✅ | `commands/badge.md` |
-| `/stats:export` | ✅ | `commands/export.md` |
+| `/statscode:login` | ✅ | `commands/login.md` |
+| `/statscode:stats` | ✅ | `commands/stats.md` + `scripts/stats.mjs` |
+| `/statscode:sync` | ✅ | `commands/sync.md` |
+| `/statscode:badge` | ✅ | `commands/badge.md` |
+| `/statscode:export` | ✅ | `commands/export.md` |
 
 **Hooks:**
 - `PreToolUse`, `PostToolUse` - Track tool usage
@@ -148,7 +148,7 @@ Public profile visible at statscode.dev/@username
    - Impact: HIGH
 
 2. **Auto-Sync Post-Session**
-   - Current: Manual `/stats:sync` required
+   - Current: Manual `/statscode:sync` required
    - Needed: Auto-sync in `SessionEnd` hook
    - Complexity: MEDIUM (3 hours)
    - Impact: HIGH
@@ -337,7 +337,7 @@ async function SessionStart() {
                 await saveConfig({ ...config, token: newToken });
                 console.log('🔄 Token refreshed automatically');
             } else {
-                console.log('🔐 Session expired. Please re-login: /stats:login');
+                console.log('🔐 Session expired. Please re-login: /statscode:login');
             }
         }
     }
@@ -537,9 +537,9 @@ hooks/
 
 commands/
   stats.md             # /stats command
-  login.md             # /stats:login
-  sync.md              # /stats:sync
-  badge.md             # /stats:badge
+  login.md             # /statscode:login
+  sync.md              # /statscode:sync
+  badge.md             # /statscode:badge
 
 scripts/
   stats.mjs            # Stats display CLI
@@ -606,7 +606,7 @@ NEXT_PUBLIC_API_URL=https://api.statscode.dev
 - [ ] Auto-sync works after session ends
 - [ ] Token refreshes automatically when near expiration
 - [ ] Stats appear on statscode.dev within seconds
-- [ ] No manual `/stats:sync` required
+- [ ] No manual `/statscode:sync` required
 
 ### Phase 2
 
@@ -621,7 +621,7 @@ NEXT_PUBLIC_API_URL=https://api.statscode.dev
 ## 📊 SUCCESS METRICS
 
 **Before (Current):**
-- Manual sync required: `/stats:sync`
+- Manual sync required: `/statscode:sync`
 - Profile data: Mock/hardcoded
 - Tips: Only in `/stats` command
 - Badges: No notifications

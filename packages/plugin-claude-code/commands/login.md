@@ -9,7 +9,7 @@ Authenticate with StatsCode using your GitHub account to sync stats and appear o
 
 ## Usage
 
-Type `/stats:login` to start the authentication flow.
+Type `/statscode:login` to start the authentication flow.
 
 ## What Happens
 
@@ -22,9 +22,9 @@ Type `/stats:login` to start the authentication flow.
 
 Once logged in, you can:
 
-- **Sync stats**: `/stats:sync` to upload to leaderboard
+- **Sync stats**: `/statscode:sync` to upload to leaderboard
 - **View profile**: Visit `statscode.dev/profile/YOUR_USERNAME`
-- **Get badge**: `/stats:badge` for your README
+- **Get badge**: `/statscode:badge` for your README
 
 ## Privacy
 
