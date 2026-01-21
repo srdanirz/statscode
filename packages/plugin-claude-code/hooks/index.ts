@@ -14,6 +14,53 @@ import { autoSync } from './auto-sync.js';
 let statsCode: StatsCode | null = null;
 let initPromise: Promise<void> | null = null;
 
+// Periodic sync state
+let lastSyncTime: number = 0;
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const SYNC_DEBOUNCE_MS = 30 * 1000; // 30 seconds debounce
+
+/**
+ * Debounced periodic sync - prevents data loss if session is killed abruptly
+ */
+function schedulePeriodicSync(): void {
+    // Clear any existing timer
+    if (syncTimer) {
+        clearTimeout(syncTimer);
+    }
+
+    const now = Date.now();
+    const timeSinceLastSync = now - lastSyncTime;
+
+    // If it's been more than SYNC_INTERVAL since last sync, sync immediately
+    if (timeSinceLastSync >= SYNC_INTERVAL_MS) {
+        performPeriodicSync();
+        return;
+    }
+
+    // Otherwise, schedule a sync for later (debounced)
+    const timeUntilNextSync = Math.min(
+        SYNC_DEBOUNCE_MS,
+        SYNC_INTERVAL_MS - timeSinceLastSync
+    );
+
+    syncTimer = setTimeout(() => {
+        performPeriodicSync();
+    }, timeUntilNextSync);
+}
+
+/**
+ * Perform the actual sync (non-blocking, silent)
+ */
+async function performPeriodicSync(): Promise<void> {
+    lastSyncTime = Date.now();
+
+    // Run sync in background - don't await to avoid blocking
+    autoSync().catch(() => {
+        // Silent failure - periodic sync should never break workflow
+    });
+}
+
 /**
  * Get or create the StatsCode instance (async)
  */
@@ -112,6 +159,9 @@ export async function OnPrompt(_params: {
     tracker.recordInteraction('prompt', {
         metadata: { timestamp: new Date().toISOString() }
     });
+
+    // Trigger periodic sync (debounced) - saves data even if session killed
+    schedulePeriodicSync();
 }
 
 /**
@@ -119,17 +169,24 @@ export async function OnPrompt(_params: {
  * Called when Claude Code session ends
  */
 export async function Stop(): Promise<void> {
+    // Clear any pending periodic sync timer
+    if (syncTimer) {
+        clearTimeout(syncTimer);
+        syncTimer = null;
+    }
+
     if (!statsCode) return;
 
     const tracker = statsCode.getTracker();
     tracker.endSession();
 
-    // Auto-sync stats to cloud (silently fails if not authenticated)
+    // Final sync on session end (blocking to ensure data is saved)
     await autoSync();
 
     statsCode.close();
     statsCode = null;
     initPromise = null;
+    lastSyncTime = 0;
 }
 
 export { getStatsCode };

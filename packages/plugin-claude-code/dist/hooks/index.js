@@ -3224,6 +3224,33 @@ async function autoSync() {
 // hooks/index.ts
 var statsCode = null;
 var initPromise = null;
+var lastSyncTime = 0;
+var syncTimer = null;
+var SYNC_INTERVAL_MS = 5 * 60 * 1e3;
+var SYNC_DEBOUNCE_MS = 30 * 1e3;
+function schedulePeriodicSync() {
+  if (syncTimer) {
+    clearTimeout(syncTimer);
+  }
+  const now = Date.now();
+  const timeSinceLastSync = now - lastSyncTime;
+  if (timeSinceLastSync >= SYNC_INTERVAL_MS) {
+    performPeriodicSync();
+    return;
+  }
+  const timeUntilNextSync = Math.min(
+    SYNC_DEBOUNCE_MS,
+    SYNC_INTERVAL_MS - timeSinceLastSync
+  );
+  syncTimer = setTimeout(() => {
+    performPeriodicSync();
+  }, timeUntilNextSync);
+}
+async function performPeriodicSync() {
+  lastSyncTime = Date.now();
+  autoSync().catch(() => {
+  });
+}
 async function getStatsCode() {
   if (!statsCode) {
     statsCode = new StatsCode({
@@ -3280,8 +3307,13 @@ async function OnPrompt(_params) {
   tracker.recordInteraction("prompt", {
     metadata: { timestamp: (/* @__PURE__ */ new Date()).toISOString() }
   });
+  schedulePeriodicSync();
 }
 async function Stop() {
+  if (syncTimer) {
+    clearTimeout(syncTimer);
+    syncTimer = null;
+  }
   if (!statsCode) return;
   const tracker = statsCode.getTracker();
   tracker.endSession();
@@ -3289,6 +3321,7 @@ async function Stop() {
   statsCode.close();
   statsCode = null;
   initPromise = null;
+  lastSyncTime = 0;
 }
 async function main() {
   const hookName = process.argv[2];
