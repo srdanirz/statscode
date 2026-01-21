@@ -1,5 +1,6 @@
 ---
 description: Login to StatsCode with GitHub to sync your stats
+handler: scripts/login.mjs
 ---
 
 # Login Command

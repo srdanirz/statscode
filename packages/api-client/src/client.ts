@@ -74,6 +74,23 @@ export class StatsCodeClient {
         }
     }
 
+    /** Refresh an expired token */
+    async refreshToken(token: string): Promise<{ token: string; user: User } | null> {
+        try {
+            const response = await fetch(`${this.apiUrl}/api/auth/refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            });
+
+            if (!response.ok) return null;
+            const data = await response.json() as { token: string; user: User };
+            return data;
+        } catch {
+            return null;
+        }
+    }
+
     // ─────────────────────────────────────────────────────────
     // Stats
     // ─────────────────────────────────────────────────────────

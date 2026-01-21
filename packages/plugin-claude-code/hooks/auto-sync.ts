@@ -14,6 +14,7 @@ const DB_PATH = join(homedir(), '.statscode', 'stats.sqlite');
 
 interface Config {
     token?: string;
+    username?: string;
     autoSync?: boolean;
 }
 
@@ -30,6 +31,71 @@ function readConfig(): Config {
     } catch {
         return {};
     }
+}
+
+/**
+ * Save config to disk
+ */
+function saveConfig(config: Config): void {
+    const configDir = join(homedir(), '.statscode');
+    if (!existsSync(configDir)) {
+        const { mkdirSync } = require('fs');
+        mkdirSync(configDir, { recursive: true });
+    }
+    const { writeFileSync } = require('fs');
+    writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+}
+
+/**
+ * Decode JWT payload to check expiration
+ */
+function decodeToken(token: string): { exp?: number; username?: string } | null {
+    try {
+        const payload = token.split('.')[1];
+        const decoded = Buffer.from(payload, 'base64').toString('utf-8');
+        return JSON.parse(decoded);
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Check if token needs refresh (expires within 7 days)
+ */
+function tokenNeedsRefresh(token: string): boolean {
+    const payload = decodeToken(token);
+    if (!payload?.exp) return false;
+
+    const expiresAt = payload.exp * 1000;
+    const sevenDaysFromNow = Date.now() + (7 * 24 * 60 * 60 * 1000);
+
+    return expiresAt < sevenDaysFromNow;
+}
+
+/**
+ * Refresh token if needed
+ */
+async function refreshTokenIfNeeded(config: Config): Promise<string | null> {
+    if (!config.token) return null;
+
+    if (!tokenNeedsRefresh(config.token)) {
+        return config.token;
+    }
+
+    try {
+        const client = new StatsCodeClient();
+        const result = await client.refreshToken(config.token);
+
+        if (result?.token) {
+            // Save new token
+            saveConfig({ ...config, token: result.token });
+            return result.token;
+        }
+    } catch {
+        // Silent failure - continue with existing token
+    }
+
+    return config.token;
 }
 
 /**
@@ -165,6 +231,12 @@ export async function autoSync(): Promise<void> {
             return;
         }
 
+        // Refresh token if needed (expires within 7 days)
+        const token = await refreshTokenIfNeeded(config);
+        if (!token) {
+            return;
+        }
+
         // Calculate stats
         const stats = await calculateStats();
         if (!stats) {
@@ -173,7 +245,7 @@ export async function autoSync(): Promise<void> {
 
         // Create API client
         const client = new StatsCodeClient();
-        client.setToken(config.token);
+        client.setToken(token);
 
         // Sync to cloud
         await client.syncStats(stats);

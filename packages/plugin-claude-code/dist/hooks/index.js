@@ -2993,6 +2993,22 @@ var StatsCodeClient = class {
       return null;
     }
   }
+  /** Refresh an expired token */
+  async refreshToken(token) {
+    try {
+      const response = await fetch(`${this.apiUrl}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      if (!response.ok)
+        return null;
+      const data = await response.json();
+      return data;
+    } catch {
+      return null;
+    }
+  }
   // ─────────────────────────────────────────────────────────
   // Stats
   // ─────────────────────────────────────────────────────────
@@ -3114,6 +3130,47 @@ function readConfig() {
     return {};
   }
 }
+function saveConfig(config) {
+  const configDir = join2(homedir2(), ".statscode");
+  if (!existsSync2(configDir)) {
+    const { mkdirSync: mkdirSync2 } = __require("fs");
+    mkdirSync2(configDir, { recursive: true });
+  }
+  const { writeFileSync: writeFileSync2 } = __require("fs");
+  writeFileSync2(CONFIG_PATH, JSON.stringify(config, null, 2));
+}
+function decodeToken(token) {
+  try {
+    const payload = token.split(".")[1];
+    const decoded = Buffer.from(payload, "base64").toString("utf-8");
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+function tokenNeedsRefresh(token) {
+  const payload = decodeToken(token);
+  if (!payload?.exp) return false;
+  const expiresAt = payload.exp * 1e3;
+  const sevenDaysFromNow = Date.now() + 7 * 24 * 60 * 60 * 1e3;
+  return expiresAt < sevenDaysFromNow;
+}
+async function refreshTokenIfNeeded(config) {
+  if (!config.token) return null;
+  if (!tokenNeedsRefresh(config.token)) {
+    return config.token;
+  }
+  try {
+    const client = new StatsCodeClient();
+    const result = await client.refreshToken(config.token);
+    if (result?.token) {
+      saveConfig({ ...config, token: result.token });
+      return result.token;
+    }
+  } catch {
+  }
+  return config.token;
+}
 async function calculateStats() {
   if (!existsSync2(DB_PATH)) {
     return null;
@@ -3207,12 +3264,16 @@ async function autoSync() {
     if (!config.token) {
       return;
     }
+    const token = await refreshTokenIfNeeded(config);
+    if (!token) {
+      return;
+    }
     const stats = await calculateStats();
     if (!stats) {
       return;
     }
     const client = new StatsCodeClient();
-    client.setToken(config.token);
+    client.setToken(token);
     await client.syncStats(stats);
   } catch (error) {
     if (process.env.STATSCODE_DEBUG === "true") {
