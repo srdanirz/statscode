@@ -52,6 +52,25 @@ const __dirname = dirname(__filename);
     }
 });
 
+// Build login CLI script
+await esbuild.build({
+    entryPoints: ['scripts/login.mjs'],
+    bundle: true,
+    outfile: 'dist/scripts/login.mjs',
+    platform: 'node',
+    target: 'node18',
+    format: 'esm',
+    banner: {
+        js: `import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+`
+    }
+});
+
 // Copy sql.js WASM files
 const wasmSrc = join(__dirname, '../../node_modules/sql.js/dist/sql-wasm.wasm');
 copyFileSync(wasmSrc, join(__dirname, 'dist/hooks/sql-wasm.wasm'));
