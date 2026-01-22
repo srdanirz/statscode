@@ -3139,6 +3139,89 @@ function saveConfig(config) {
   const { writeFileSync: writeFileSync2 } = __require("fs");
   writeFileSync2(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
+function getLanguageFromPath(filePath) {
+  const fileName = filePath.split("/").pop()?.toLowerCase();
+  if (fileName === "dockerfile") return "Docker";
+  if (fileName === "makefile") return "Make";
+  if (fileName?.startsWith(".env")) return "Env";
+  const ext = filePath.split(".").pop()?.toLowerCase();
+  const langMap = {
+    // JavaScript/TypeScript
+    "ts": "TypeScript",
+    "tsx": "TypeScript",
+    "mts": "TypeScript",
+    "cts": "TypeScript",
+    "js": "JavaScript",
+    "jsx": "JavaScript",
+    "mjs": "JavaScript",
+    "cjs": "JavaScript",
+    // Backend/Systems
+    "py": "Python",
+    "rs": "Rust",
+    "go": "Go",
+    "java": "Java",
+    "kt": "Kotlin",
+    "scala": "Scala",
+    "clj": "Clojure",
+    "ex": "Elixir",
+    "exs": "Elixir",
+    "erl": "Erlang",
+    "nim": "Nim",
+    "zig": "Zig",
+    "swift": "Swift",
+    "c": "C",
+    "cpp": "C++",
+    "cc": "C++",
+    "cxx": "C++",
+    "cs": "C#",
+    "rb": "Ruby",
+    "php": "PHP",
+    // Data/Science
+    "ipynb": "Jupyter",
+    "r": "R",
+    "jl": "Julia",
+    // Frontend/Web
+    "html": "HTML",
+    "css": "CSS",
+    "scss": "SCSS",
+    "sass": "SASS",
+    "vue": "Vue",
+    "svelte": "Svelte",
+    "astro": "Astro",
+    "hbs": "Handlebars",
+    "ejs": "EJS",
+    "pug": "Pug",
+    "wasm": "WebAssembly",
+    // Database
+    "sql": "SQL",
+    // Shell/Scripts
+    "sh": "Shell",
+    "bash": "Bash",
+    // Config/Infra
+    "yml": "YAML",
+    "yaml": "YAML",
+    "json": "JSON",
+    "toml": "TOML",
+    "xml": "XML",
+    "ini": "INI",
+    "conf": "Config",
+    "env": "Env",
+    "tf": "Terraform",
+    "tfvars": "Terraform",
+    "dockerfile": "Docker",
+    "makefile": "Make",
+    // Build/Package
+    "gradle": "Gradle",
+    "groovy": "Groovy",
+    "properties": "Properties",
+    "lock": "Lockfile",
+    // Protocol
+    "proto": "Protobuf",
+    // Docs
+    "md": "Markdown"
+  };
+  return langMap[ext || ""] || "Other";
+}
 function decodeToken(token) {
   try {
     const payload = token.split(".")[1];
@@ -3233,6 +3316,29 @@ async function calculateStats() {
         };
       }
     }
+    const metadataResult = db.exec(`
+            SELECT metadata
+            FROM interactions
+            WHERE tool_name IN ('Edit', 'Write')
+            AND metadata IS NOT NULL
+        `);
+    const languageCounts = {};
+    let totalLinesGenerated = 0;
+    if (metadataResult[0]?.values?.length > 0) {
+      for (const [metadataStr] of metadataResult[0].values) {
+        try {
+          const metadata = JSON.parse(metadataStr);
+          if (metadata.linesGenerated) {
+            totalLinesGenerated += metadata.linesGenerated;
+          }
+          if (metadata.filePath) {
+            const lang = getLanguageFromPath(metadata.filePath);
+            languageCounts[lang] = (languageCounts[lang] || 0) + 1;
+          }
+        } catch {
+        }
+      }
+    }
     const score = Math.min(
       totalHours / 100 * 2 + // Up to 2 points for hours
       totalSessions / 50 * 2 + // Up to 2 points for consistency
@@ -3245,7 +3351,9 @@ async function calculateStats() {
       totalHours: Number(totalHours.toFixed(2)),
       totalSessions,
       totalInteractions,
+      totalLinesGenerated: totalLinesGenerated > 0 ? totalLinesGenerated : void 0,
       byTool,
+      byLanguage: Object.keys(languageCounts).length > 0 ? languageCounts : void 0,
       badges: [],
       // Badges will be calculated server-side
       score: Number(score.toFixed(1))

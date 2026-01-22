@@ -14,7 +14,9 @@ interface SyncPayload {
     totalHours: number;
     totalSessions: number;
     totalInteractions: number;
+    totalLinesGenerated?: number;
     byTool: Record<string, { hours: number; sessions: number }>;
+    byLanguage?: Record<string, number>;
     badges: string[];
     score: number;
 }
@@ -54,6 +56,56 @@ function saveConfig(config: Config): void {
     }
     const { writeFileSync } = require('fs');
     writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+}
+
+/**
+ * Get programming language from file path
+ */
+function getLanguageFromPath(filePath: string): string {
+    // Check by filename first
+    const fileName = filePath.split('/').pop()?.toLowerCase();
+    if (fileName === 'dockerfile') return 'Docker';
+    if (fileName === 'makefile') return 'Make';
+    if (fileName?.startsWith('.env')) return 'Env';
+
+    // Extract extension
+    const ext = filePath.split('.').pop()?.toLowerCase();
+
+    const langMap: Record<string, string> = {
+        // JavaScript/TypeScript
+        'ts': 'TypeScript', 'tsx': 'TypeScript', 'mts': 'TypeScript', 'cts': 'TypeScript',
+        'js': 'JavaScript', 'jsx': 'JavaScript', 'mjs': 'JavaScript', 'cjs': 'JavaScript',
+        // Backend/Systems
+        'py': 'Python', 'rs': 'Rust', 'go': 'Go', 'java': 'Java', 'kt': 'Kotlin',
+        'scala': 'Scala', 'clj': 'Clojure', 'ex': 'Elixir', 'exs': 'Elixir',
+        'erl': 'Erlang', 'nim': 'Nim', 'zig': 'Zig', 'swift': 'Swift',
+        'c': 'C', 'cpp': 'C++', 'cc': 'C++', 'cxx': 'C++', 'cs': 'C#',
+        'rb': 'Ruby', 'php': 'PHP',
+        // Data/Science
+        'ipynb': 'Jupyter', 'r': 'R', 'jl': 'Julia',
+        // Frontend/Web
+        'html': 'HTML', 'css': 'CSS', 'scss': 'SCSS', 'sass': 'SASS',
+        'vue': 'Vue', 'svelte': 'Svelte', 'astro': 'Astro',
+        'hbs': 'Handlebars', 'ejs': 'EJS', 'pug': 'Pug', 'wasm': 'WebAssembly',
+        // Database
+        'sql': 'SQL',
+        // Shell/Scripts
+        'sh': 'Shell', 'bash': 'Bash',
+        // Config/Infra
+        'yml': 'YAML', 'yaml': 'YAML', 'json': 'JSON', 'toml': 'TOML',
+        'xml': 'XML', 'ini': 'INI', 'conf': 'Config', 'env': 'Env',
+        'tf': 'Terraform', 'tfvars': 'Terraform', 'dockerfile': 'Docker',
+        'makefile': 'Make',
+        // Build/Package
+        'gradle': 'Gradle', 'groovy': 'Groovy', 'properties': 'Properties',
+        'lock': 'Lockfile',
+        // Protocol
+        'proto': 'Protobuf',
+        // Docs
+        'md': 'Markdown'
+    };
+
+    return langMap[ext || ''] || 'Other';
 }
 
 /**
@@ -197,6 +249,38 @@ async function calculateStats(): Promise<SyncPayload | null> {
             }
         }
 
+        // Get language stats and LOC from metadata
+        const metadataResult = db.exec(`
+            SELECT metadata
+            FROM interactions
+            WHERE tool_name IN ('Edit', 'Write')
+            AND metadata IS NOT NULL
+        `);
+
+        const languageCounts: Record<string, number> = {};
+        let totalLinesGenerated = 0;
+
+        if (metadataResult[0]?.values?.length > 0) {
+            for (const [metadataStr] of metadataResult[0].values) {
+                try {
+                    const metadata = JSON.parse(metadataStr as string);
+
+                    // Count lines generated
+                    if (metadata.linesGenerated) {
+                        totalLinesGenerated += metadata.linesGenerated;
+                    }
+
+                    // Count language usage
+                    if (metadata.filePath) {
+                        const lang = getLanguageFromPath(metadata.filePath);
+                        languageCounts[lang] = (languageCounts[lang] || 0) + 1;
+                    }
+                } catch {
+                    // Skip invalid JSON
+                }
+            }
+        }
+
         // Calculate simple score (0-5 scale based on hours and engagement)
         const score = Math.min(
             ((totalHours / 100) * 2) + // Up to 2 points for hours
@@ -211,7 +295,9 @@ async function calculateStats(): Promise<SyncPayload | null> {
             totalHours: Number(totalHours.toFixed(2)),
             totalSessions,
             totalInteractions,
+            totalLinesGenerated: totalLinesGenerated > 0 ? totalLinesGenerated : undefined,
             byTool,
+            byLanguage: Object.keys(languageCounts).length > 0 ? languageCounts : undefined,
             badges: [], // Badges will be calculated server-side
             score: Number(score.toFixed(1))
         };

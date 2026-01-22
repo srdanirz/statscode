@@ -14,8 +14,10 @@ export interface UserStats {
     totalHours: number;
     totalSessions: number;
     totalInteractions: number;
+    totalLinesGenerated?: number;
     score: number;
     byTool: Record<string, ToolStats>;
+    byLanguage?: Record<string, number>;
     badges: string[];
 }
 
@@ -52,7 +54,9 @@ export interface SyncPayload {
     totalHours: number;
     totalSessions: number;
     totalInteractions: number;
+    totalLinesGenerated?: number;
     byTool: Record<string, ToolStats>;
+    byLanguage?: Record<string, number>;
     badges: string[];
     score: number;
 }
