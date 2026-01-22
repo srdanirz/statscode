@@ -2135,6 +2135,26 @@ var import_sql = __toESM(require_sql_wasm(), 1);
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
+function getInstalledPlugins() {
+  try {
+    const pluginsPath = join(homedir(), ".claude", "plugins", "installed_plugins.json");
+    if (!existsSync(pluginsPath)) return [];
+    const data = JSON.parse(readFileSync(pluginsPath, "utf-8"));
+    return Object.keys(data.plugins || {});
+  } catch {
+    return [];
+  }
+}
+function getMCPServers() {
+  try {
+    const settingsPath = join(homedir(), ".claude", "settings.json");
+    if (!existsSync(settingsPath)) return [];
+    const data = JSON.parse(readFileSync(settingsPath, "utf-8"));
+    return Object.keys(data.mcp?.servers || {});
+  } catch {
+    return [];
+  }
+}
 var dbPath = join(homedir(), ".statscode", "stats.sqlite");
 async function getStats() {
   if (!existsSync(dbPath)) {
@@ -2211,14 +2231,12 @@ async function getStats() {
         GROUP BY type 
         ORDER BY count DESC
     `);
-  const toolsResult = db.exec(`
-        SELECT tool_name, COUNT(*) as count 
-        FROM interactions 
-        WHERE tool_name IS NOT NULL AND tool_name != ''
-        GROUP BY tool_name 
-        ORDER BY count DESC 
-        LIMIT 5
+  const promptsResult = db.exec(`
+        SELECT COUNT(*) as count
+        FROM interactions
+        WHERE type = 'prompt'
     `);
+  const totalPrompts = promptsResult[0]?.values[0]?.[0] || 0;
   const recentResult = db.exec(`
         SELECT assistant, start_time, end_time
         FROM sessions
@@ -2230,8 +2248,8 @@ async function getStats() {
   console.log("\u{1F4CA} StatsCode Stats");
   console.log("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
   console.log(`\u23F1\uFE0F  Active Hours:       ${Number(totalHours).toFixed(1)}h`);
-  console.log(`\u{1F4DD} Total Sessions:     ${totalSessions}`);
-  console.log(`\u{1F527} Total Interactions: ${totalInteractions}`);
+  console.log(`\u{1F4DD} Sessions:           ${totalSessions}`);
+  console.log(`\u{1F4AC} Prompts:            ${totalPrompts}`);
   if (currentSessionActivityMs > 0) {
     const sessionMinutes = currentSessionActivityMs / 6e4;
     const hours = Math.floor(sessionMinutes / 60);
@@ -2245,18 +2263,21 @@ async function getStats() {
     }
   }
   console.log("");
-  if (byTypeResult[0]?.values?.length > 0) {
-    console.log("\u{1F4C8} By Interaction Type:");
-    for (const [type, count] of byTypeResult[0].values) {
-      console.log(`   \u2022 ${type}: ${count}`);
-    }
+  const plugins = getInstalledPlugins();
+  if (plugins.length > 0) {
+    console.log("\u{1F50C} Active Plugins:");
+    plugins.forEach((plugin) => {
+      const displayName = plugin.split("@")[0].split("/").pop();
+      console.log(`   \u2022 ${displayName}`);
+    });
     console.log("");
   }
-  if (toolsResult[0]?.values?.length > 0) {
-    console.log("\u{1F6E0}\uFE0F  Top Tools Used:");
-    for (const [tool, count] of toolsResult[0].values) {
-      console.log(`   \u2022 ${tool}: ${count}`);
-    }
+  const mcpServers = getMCPServers();
+  if (mcpServers.length > 0) {
+    console.log("\u{1F310} MCP Servers:");
+    mcpServers.forEach((server) => {
+      console.log(`   \u2022 ${server}`);
+    });
     console.log("");
   }
   if (recentResult[0]?.values?.length > 0) {

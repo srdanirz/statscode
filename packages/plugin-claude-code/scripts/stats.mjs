@@ -8,6 +8,36 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
+/**
+ * Get installed Claude Code plugins
+ */
+function getInstalledPlugins() {
+    try {
+        const pluginsPath = join(homedir(), '.claude', 'plugins', 'installed_plugins.json');
+        if (!existsSync(pluginsPath)) return [];
+
+        const data = JSON.parse(readFileSync(pluginsPath, 'utf-8'));
+        return Object.keys(data.plugins || {});
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Get configured MCP servers
+ */
+function getMCPServers() {
+    try {
+        const settingsPath = join(homedir(), '.claude', 'settings.json');
+        if (!existsSync(settingsPath)) return [];
+
+        const data = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+        return Object.keys(data.mcp?.servers || {});
+    } catch {
+        return [];
+    }
+}
+
 const dbPath = join(homedir(), '.statscode', 'stats.sqlite');
 
 async function getStats() {
@@ -114,15 +144,13 @@ async function getStats() {
         ORDER BY count DESC
     `);
 
-    // Get tool usage
-    const toolsResult = db.exec(`
-        SELECT tool_name, COUNT(*) as count 
-        FROM interactions 
-        WHERE tool_name IS NOT NULL AND tool_name != ''
-        GROUP BY tool_name 
-        ORDER BY count DESC 
-        LIMIT 5
+    // Get prompt count (more relevant than total interactions)
+    const promptsResult = db.exec(`
+        SELECT COUNT(*) as count
+        FROM interactions
+        WHERE type = 'prompt'
     `);
+    const totalPrompts = promptsResult[0]?.values[0]?.[0] || 0;
 
     // Get recent sessions
     const recentResult = db.exec(`
@@ -137,8 +165,8 @@ async function getStats() {
     console.log('📊 StatsCode Stats');
     console.log('═══════════════════════════════════════');
     console.log(`⏱️  Active Hours:       ${Number(totalHours).toFixed(1)}h`);
-    console.log(`📝 Total Sessions:     ${totalSessions}`);
-    console.log(`🔧 Total Interactions: ${totalInteractions}`);
+    console.log(`📝 Sessions:           ${totalSessions}`);
+    console.log(`💬 Prompts:            ${totalPrompts}`);
 
     if (currentSessionActivityMs > 0) {
         const sessionMinutes = currentSessionActivityMs / 60000;
@@ -155,19 +183,25 @@ async function getStats() {
     }
     console.log('');
 
-    if (byTypeResult[0]?.values?.length > 0) {
-        console.log('📈 By Interaction Type:');
-        for (const [type, count] of byTypeResult[0].values) {
-            console.log(`   • ${type}: ${count}`);
-        }
+    // Show installed plugins
+    const plugins = getInstalledPlugins();
+    if (plugins.length > 0) {
+        console.log('🔌 Active Plugins:');
+        plugins.forEach(plugin => {
+            // Clean up plugin names for display
+            const displayName = plugin.split('@')[0].split('/').pop();
+            console.log(`   • ${displayName}`);
+        });
         console.log('');
     }
 
-    if (toolsResult[0]?.values?.length > 0) {
-        console.log('🛠️  Top Tools Used:');
-        for (const [tool, count] of toolsResult[0].values) {
-            console.log(`   • ${tool}: ${count}`);
-        }
+    // Show MCP servers
+    const mcpServers = getMCPServers();
+    if (mcpServers.length > 0) {
+        console.log('🌐 MCP Servers:');
+        mcpServers.forEach(server => {
+            console.log(`   • ${server}`);
+        });
         console.log('');
     }
 
