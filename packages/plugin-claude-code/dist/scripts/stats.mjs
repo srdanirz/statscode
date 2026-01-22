@@ -2156,19 +2156,34 @@ function getMCPServers() {
   }
 }
 function getLanguageFromPath(filePath) {
+  const fileName = filePath.split("/").pop()?.toLowerCase();
+  if (fileName === "dockerfile") return "Docker";
+  if (fileName === "makefile") return "Make";
+  if (fileName?.startsWith(".env")) return "Env";
   const ext = filePath.split(".").pop()?.toLowerCase();
   const langMap = {
+    // JavaScript/TypeScript
     "ts": "TypeScript",
     "tsx": "TypeScript",
+    "mts": "TypeScript",
+    "cts": "TypeScript",
     "js": "JavaScript",
     "jsx": "JavaScript",
     "mjs": "JavaScript",
     "cjs": "JavaScript",
+    // Backend/Systems
     "py": "Python",
     "rs": "Rust",
     "go": "Go",
     "java": "Java",
     "kt": "Kotlin",
+    "scala": "Scala",
+    "clj": "Clojure",
+    "ex": "Elixir",
+    "exs": "Elixir",
+    "erl": "Erlang",
+    "nim": "Nim",
+    "zig": "Zig",
     "swift": "Swift",
     "c": "C",
     "cpp": "C++",
@@ -2177,21 +2192,49 @@ function getLanguageFromPath(filePath) {
     "cs": "C#",
     "rb": "Ruby",
     "php": "PHP",
+    // Data/Science
+    "ipynb": "Jupyter",
+    "r": "R",
+    "jl": "Julia",
+    // Frontend/Web
     "html": "HTML",
     "css": "CSS",
     "scss": "SCSS",
     "sass": "SASS",
     "vue": "Vue",
     "svelte": "Svelte",
+    "astro": "Astro",
+    "hbs": "Handlebars",
+    "ejs": "EJS",
+    "pug": "Pug",
+    "wasm": "WebAssembly",
+    // Database
     "sql": "SQL",
+    // Shell/Scripts
     "sh": "Shell",
     "bash": "Bash",
+    // Config/Infra
     "yml": "YAML",
     "yaml": "YAML",
     "json": "JSON",
-    "md": "Markdown",
     "toml": "TOML",
-    "xml": "XML"
+    "xml": "XML",
+    "ini": "INI",
+    "conf": "Config",
+    "env": "Env",
+    "tf": "Terraform",
+    "tfvars": "Terraform",
+    "dockerfile": "Docker",
+    "makefile": "Make",
+    // Build/Package
+    "gradle": "Gradle",
+    "groovy": "Groovy",
+    "properties": "Properties",
+    "lock": "Lockfile",
+    // Protocol
+    "proto": "Protobuf",
+    // Docs
+    "md": "Markdown"
   };
   return langMap[ext] || "Other";
 }
