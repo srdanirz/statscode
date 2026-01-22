@@ -2155,6 +2155,46 @@ function getMCPServers() {
     return [];
   }
 }
+function getLanguageFromPath(filePath) {
+  const ext = filePath.split(".").pop()?.toLowerCase();
+  const langMap = {
+    "ts": "TypeScript",
+    "tsx": "TypeScript",
+    "js": "JavaScript",
+    "jsx": "JavaScript",
+    "mjs": "JavaScript",
+    "cjs": "JavaScript",
+    "py": "Python",
+    "rs": "Rust",
+    "go": "Go",
+    "java": "Java",
+    "kt": "Kotlin",
+    "swift": "Swift",
+    "c": "C",
+    "cpp": "C++",
+    "cc": "C++",
+    "cxx": "C++",
+    "cs": "C#",
+    "rb": "Ruby",
+    "php": "PHP",
+    "html": "HTML",
+    "css": "CSS",
+    "scss": "SCSS",
+    "sass": "SASS",
+    "vue": "Vue",
+    "svelte": "Svelte",
+    "sql": "SQL",
+    "sh": "Shell",
+    "bash": "Bash",
+    "yml": "YAML",
+    "yaml": "YAML",
+    "json": "JSON",
+    "md": "Markdown",
+    "toml": "TOML",
+    "xml": "XML"
+  };
+  return langMap[ext] || "Other";
+}
 var dbPath = join(homedir(), ".statscode", "stats.sqlite");
 async function getStats() {
   if (!existsSync(dbPath)) {
@@ -2237,6 +2277,30 @@ async function getStats() {
         WHERE type = 'prompt'
     `);
   const totalPrompts = promptsResult[0]?.values[0]?.[0] || 0;
+  const metadataResult = db.exec(`
+        SELECT metadata
+        FROM interactions
+        WHERE tool_name IN ('Edit', 'Write')
+        AND metadata IS NOT NULL
+    `);
+  const languageCounts = {};
+  let totalLOC = 0;
+  if (metadataResult[0]?.values?.length > 0) {
+    for (const [metadataStr] of metadataResult[0].values) {
+      try {
+        const metadata = JSON.parse(metadataStr);
+        if (metadata.linesGenerated) {
+          totalLOC += metadata.linesGenerated;
+        }
+        if (metadata.filePath) {
+          const lang = getLanguageFromPath(metadata.filePath);
+          languageCounts[lang] = (languageCounts[lang] || 0) + 1;
+        }
+      } catch {
+      }
+    }
+  }
+  const topLanguages = Object.entries(languageCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const recentResult = db.exec(`
         SELECT assistant, start_time, end_time
         FROM sessions
@@ -2250,6 +2314,9 @@ async function getStats() {
   console.log(`\u23F1\uFE0F  Active Hours:       ${Number(totalHours).toFixed(1)}h`);
   console.log(`\u{1F4DD} Sessions:           ${totalSessions}`);
   console.log(`\u{1F4AC} Prompts:            ${totalPrompts}`);
+  if (totalLOC > 0) {
+    console.log(`\u270D\uFE0F  Lines Generated:   ${totalLOC.toLocaleString()}`);
+  }
   if (currentSessionActivityMs > 0) {
     const sessionMinutes = currentSessionActivityMs / 6e4;
     const hours = Math.floor(sessionMinutes / 60);
@@ -2263,6 +2330,13 @@ async function getStats() {
     }
   }
   console.log("");
+  if (topLanguages.length > 0) {
+    console.log("\u{1F4BB} Top Languages:");
+    topLanguages.forEach(([lang, count]) => {
+      console.log(`   \u2022 ${lang}: ${count} files`);
+    });
+    console.log("");
+  }
   const plugins = getInstalledPlugins();
   if (plugins.length > 0) {
     console.log("\u{1F50C} Active Plugins:");

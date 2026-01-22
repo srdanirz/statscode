@@ -38,6 +38,50 @@ function getMCPServers() {
     }
 }
 
+/**
+ * Get programming language from file path
+ */
+function getLanguageFromPath(filePath) {
+    const ext = filePath.split('.').pop()?.toLowerCase();
+    const langMap = {
+        'ts': 'TypeScript',
+        'tsx': 'TypeScript',
+        'js': 'JavaScript',
+        'jsx': 'JavaScript',
+        'mjs': 'JavaScript',
+        'cjs': 'JavaScript',
+        'py': 'Python',
+        'rs': 'Rust',
+        'go': 'Go',
+        'java': 'Java',
+        'kt': 'Kotlin',
+        'swift': 'Swift',
+        'c': 'C',
+        'cpp': 'C++',
+        'cc': 'C++',
+        'cxx': 'C++',
+        'cs': 'C#',
+        'rb': 'Ruby',
+        'php': 'PHP',
+        'html': 'HTML',
+        'css': 'CSS',
+        'scss': 'SCSS',
+        'sass': 'SASS',
+        'vue': 'Vue',
+        'svelte': 'Svelte',
+        'sql': 'SQL',
+        'sh': 'Shell',
+        'bash': 'Bash',
+        'yml': 'YAML',
+        'yaml': 'YAML',
+        'json': 'JSON',
+        'md': 'Markdown',
+        'toml': 'TOML',
+        'xml': 'XML'
+    };
+    return langMap[ext] || 'Other';
+}
+
 const dbPath = join(homedir(), '.statscode', 'stats.sqlite');
 
 async function getStats() {
@@ -152,6 +196,43 @@ async function getStats() {
     `);
     const totalPrompts = promptsResult[0]?.values[0]?.[0] || 0;
 
+    // Get language stats and LOC from metadata
+    const metadataResult = db.exec(`
+        SELECT metadata
+        FROM interactions
+        WHERE tool_name IN ('Edit', 'Write')
+        AND metadata IS NOT NULL
+    `);
+
+    const languageCounts = {};
+    let totalLOC = 0;
+
+    if (metadataResult[0]?.values?.length > 0) {
+        for (const [metadataStr] of metadataResult[0].values) {
+            try {
+                const metadata = JSON.parse(metadataStr);
+
+                // Count lines generated
+                if (metadata.linesGenerated) {
+                    totalLOC += metadata.linesGenerated;
+                }
+
+                // Count language usage
+                if (metadata.filePath) {
+                    const lang = getLanguageFromPath(metadata.filePath);
+                    languageCounts[lang] = (languageCounts[lang] || 0) + 1;
+                }
+            } catch {
+                // Skip invalid JSON
+            }
+        }
+    }
+
+    // Sort languages by usage
+    const topLanguages = Object.entries(languageCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
     // Get recent sessions
     const recentResult = db.exec(`
         SELECT assistant, start_time, end_time
@@ -167,6 +248,9 @@ async function getStats() {
     console.log(`⏱️  Active Hours:       ${Number(totalHours).toFixed(1)}h`);
     console.log(`📝 Sessions:           ${totalSessions}`);
     console.log(`💬 Prompts:            ${totalPrompts}`);
+    if (totalLOC > 0) {
+        console.log(`✍️  Lines Generated:   ${totalLOC.toLocaleString()}`);
+    }
 
     if (currentSessionActivityMs > 0) {
         const sessionMinutes = currentSessionActivityMs / 60000;
@@ -182,6 +266,15 @@ async function getStats() {
         }
     }
     console.log('');
+
+    // Show top programming languages
+    if (topLanguages.length > 0) {
+        console.log('💻 Top Languages:');
+        topLanguages.forEach(([lang, count]) => {
+            console.log(`   • ${lang}: ${count} files`);
+        });
+        console.log('');
+    }
 
     // Show installed plugins
     const plugins = getInstalledPlugins();

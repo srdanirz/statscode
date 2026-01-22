@@ -3339,11 +3339,29 @@ async function PreToolUse(params) {
   if (!tracker.hasActiveSession()) {
     tracker.startSession("claude-code", process.cwd());
   }
+  const metadata = {
+    inputKeys: Object.keys(params.tool_input)
+  };
+  if (params.tool_name === "Edit" || params.tool_name === "Write") {
+    const filePath = params.tool_input.file_path;
+    if (filePath) {
+      metadata.filePath = filePath;
+      if (params.tool_name === "Edit") {
+        const newString = params.tool_input.new_string;
+        if (newString) {
+          metadata.linesGenerated = newString.split("\n").length;
+        }
+      } else if (params.tool_name === "Write") {
+        const content = params.tool_input.content;
+        if (content) {
+          metadata.linesGenerated = content.split("\n").length;
+        }
+      }
+    }
+  }
   tracker.recordInteraction("tool_use", {
     toolName: params.tool_name,
-    metadata: {
-      inputKeys: Object.keys(params.tool_input)
-    }
+    metadata
   });
   return void 0;
 }

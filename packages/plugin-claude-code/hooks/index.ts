@@ -105,12 +105,36 @@ export async function PreToolUse(params: {
         tracker.startSession('claude-code', process.cwd());
     }
 
+    // Enhanced metadata for code generation tracking
+    const metadata: Record<string, any> = {
+        inputKeys: Object.keys(params.tool_input)
+    };
+
+    // Track file operations for language and LOC stats
+    if (params.tool_name === 'Edit' || params.tool_name === 'Write') {
+        const filePath = params.tool_input.file_path as string;
+        if (filePath) {
+            metadata.filePath = filePath;
+
+            // Count lines for Edit (old_string + new_string) or Write (content)
+            if (params.tool_name === 'Edit') {
+                const newString = params.tool_input.new_string as string;
+                if (newString) {
+                    metadata.linesGenerated = newString.split('\n').length;
+                }
+            } else if (params.tool_name === 'Write') {
+                const content = params.tool_input.content as string;
+                if (content) {
+                    metadata.linesGenerated = content.split('\n').length;
+                }
+            }
+        }
+    }
+
     // Record the tool use
     tracker.recordInteraction('tool_use', {
         toolName: params.tool_name,
-        metadata: {
-            inputKeys: Object.keys(params.tool_input)
-        }
+        metadata
     });
 
     return undefined;
