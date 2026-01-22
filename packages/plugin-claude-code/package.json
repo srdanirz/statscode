@@ -1,6 +1,6 @@
 {
     "name": "@statscode/plugin-claude-code",
-    "version": "0.3.5",
+    "version": "0.3.6",
     "description": "StatsCode plugin for Claude Code - Track your AI coding stats",
     "main": "./dist/hooks/index.js",
     "types": "./dist/hooks/index.d.ts",

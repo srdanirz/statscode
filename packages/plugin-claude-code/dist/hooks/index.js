@@ -3445,7 +3445,8 @@ async function PreToolUse(params) {
   const sc = await getStatsCode();
   const tracker = sc.getTracker();
   if (!tracker.hasActiveSession()) {
-    tracker.startSession("claude-code", process.cwd());
+    console.warn("[StatsCode] No active session in PreToolUse - this may indicate a hook ordering issue");
+    return;
   }
   const metadata = {
     inputKeys: Object.keys(params.tool_input)

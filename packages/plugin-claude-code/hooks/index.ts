@@ -100,9 +100,12 @@ export async function PreToolUse(params: {
     const sc = await getStatsCode();
     const tracker = sc.getTracker();
 
-    // Start session if not already started
+    // Session should already be started by OnPrompt
+    // Don't create a new session here to avoid duplicates
     if (!tracker.hasActiveSession()) {
-        tracker.startSession('claude-code', process.cwd());
+        // This shouldn't happen in normal flow, but guard against it
+        console.warn('[StatsCode] No active session in PreToolUse - this may indicate a hook ordering issue');
+        return;
     }
 
     // Enhanced metadata for code generation tracking
