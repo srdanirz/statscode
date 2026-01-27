@@ -11,7 +11,7 @@
             "name": "statscode",
             "source": "./packages/plugin-claude-code",
             "description": "📊 Track your AI coding stats - hours, patterns, badges & certificates",
-            "version": "0.3.9",
+            "version": "0.3.10",
             "author": {
                 "name": "StatsCode Contributors"
             },
