@@ -1,0 +1,11 @@
+{
+    "name": "statscode",
+    "version": "0.3.10",
+    "description": "📊 Track your AI coding stats - hours, patterns, badges & certificates",
+    "author": {
+        "name": "StatsCode Contributors"
+    },
+    "homepage": "https://statscode.dev",
+    "commands": "./commands",
+    "hooks": "./hooks/hooks.json"
+}

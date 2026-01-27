@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+!packages/plugin-claude-code/dist/
+.next/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database files
+*.sqlite
+*.sqlite3
+
+# Environment & credentials (CRITICAL)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*-credentials.json
+service-account.json
+gcp-key.json
+
+# Private folder (contains GCP credentials)
+private/
+
+# Coverage
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.vercel
+.env*.local

@@ -1,0 +1,40 @@
+{
+    "name": "@statscode/core",
+    "version": "0.3.0",
+    "description": "Core tracking and analysis engine for StatsCode",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "prepublishOnly": "npm run build"
+    },
+    "files": [
+        "dist"
+    ],
+    "keywords": [
+        "ai",
+        "coding",
+        "stats",
+        "tracker",
+        "claude-code",
+        "cursor",
+        "codex"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/srdanirz/statscode.git",
+        "directory": "packages/core"
+    },
+    "homepage": "https://statscode.dev",
+    "license": "MIT",
+    "dependencies": {
+        "sql.js": "^1.10.0"
+    },
+    "devDependencies": {},
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

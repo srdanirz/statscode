@@ -1,0 +1,25 @@
+{
+    "name": "@statscode/badges",
+    "version": "0.1.0",
+    "description": "Custom achievement badge system for StatsCode",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run"
+    },
+    "keywords": [
+        "statscode",
+        "badges",
+        "achievements",
+        "gamification"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "@statscode/core": "file:../core"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

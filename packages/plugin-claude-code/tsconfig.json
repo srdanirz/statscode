@@ -1,0 +1,15 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./hooks"
+    },
+    "include": [
+        "hooks/**/*",
+        "commands/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}
