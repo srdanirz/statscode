@@ -6,6 +6,6 @@
         "name": "StatsCode Contributors"
     },
     "homepage": "https://statscode.dev",
-    "commands": "./commands",
-    "hooks": "./hooks/hooks.json"
+    "commands": "../commands",
+    "hooks": "../hooks/hooks.json"
 }
