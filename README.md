@@ -31,7 +31,7 @@ git clone https://github.com/srdanirz/statscode
 | `/statscode:stats` | View your coding statistics |
 | `/statscode:insights` | View session patterns |
 | `/statscode:login` | Login with GitHub |
-| `/statscode:badge` | Get badge for your profile |
+| `/statscode:badge` | View your earned badges |
 
 ## What's Tracked
 

@@ -2,12 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.10] - 2026-01-27
+## [0.3.10] - 2026-01-28
 
 ### Added
 - Session insights system (`/statscode:insights`)
 - PreCompact hook for automatic session debriefs
 - Lines added/removed tracking (separate from net lines)
+- Badge display command (`/statscode:badge`) shows earned achievements
 
 ### Fixed
 - Session tracking across multi-process hooks

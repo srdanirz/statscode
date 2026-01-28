@@ -17,7 +17,7 @@ claude plugins install statscode
 | `/statscode:stats` | View your coding statistics |
 | `/statscode:insights` | View session patterns and insights |
 | `/statscode:login` | Login with GitHub to sync to cloud |
-| `/statscode:badge` | Get a badge for your GitHub profile |
+| `/statscode:badge` | View your earned badges and achievements |
 | `/statscode:force-sync` | Force sync stats to cloud |
 | `/statscode:export` | Export stats as JSON |
 
