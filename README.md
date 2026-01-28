@@ -18,12 +18,14 @@ StatsCode tracks how you use AI coding assistants. Think of it as **GitHub stats
 | Tool | Status |
 |------|--------|
 | Claude Code | Available |
+| OpenCode | Available |
 | Codex | Pronto |
 | Antigravity | Pronto |
-| OpenCode | Pronto |
 | Cursor | Pronto |
 
-## Quick Start (Claude Code)
+## Quick Start
+
+### Claude Code
 
 ```bash
 # Install via marketplace
@@ -34,7 +36,7 @@ cd ~/.claude/plugins
 git clone https://github.com/srdanirz/statscode
 ```
 
-### Commands
+#### Commands
 
 | Command | Description |
 |---------|-------------|
@@ -42,6 +44,27 @@ git clone https://github.com/srdanirz/statscode
 | `/statscode:insights` | View session patterns |
 | `/statscode:login` | Login with GitHub |
 | `/statscode:badge` | View your earned badges |
+
+### OpenCode
+
+Add to your `opencode.json` ([docs](https://opencode.ai/docs/plugins/)):
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["@statscode/plugin-opencode"]
+}
+```
+
+The plugin installs automatically via Bun on startup.
+
+#### Custom Tools
+
+| Tool | Description |
+|------|-------------|
+| `statscode.stats` | View your coding statistics |
+| `statscode.badge` | Generate badge SVG |
+| `statscode.sync` | Force sync to cloud |
 
 ## What's Tracked
 
@@ -66,6 +89,7 @@ After logging in with `/statscode:login`:
 | `@statscode/core` | Core tracking library |
 | `@statscode/api-client` | Cloud sync SDK |
 | `@statscode/plugin-claude-code` | Claude Code plugin |
+| `@statscode/plugin-opencode` | OpenCode plugin |
 
 ## Privacy
 
