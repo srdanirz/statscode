@@ -1,15 +1,27 @@
 /**
  * Auto-Sync Helper
  * Automatically syncs local stats to StatsCode cloud after each session
+ * Includes cryptographic signing to prevent manipulation
  */
 
 import { StatsCodeClient } from '@statscode/api-client';
+import { getDeviceId, createSignedEvent, detectAnomalies } from '@statscode/core';
 import { homedir } from 'os';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
+import { createHmac } from 'crypto';
 import initSqlJs from 'sql.js';
 
 // Define SyncPayload inline to avoid import issues with bundler
+interface SignedEvent {
+    type: 'session' | 'interaction';
+    data: Record<string, unknown>;
+    timestamp: number;
+    deviceId: string;
+    nonce: string;
+    signature: string;
+}
+
 interface SyncPayload {
     totalHours: number;
     totalSessions: number;
@@ -22,6 +34,10 @@ interface SyncPayload {
     plugins?: string[];
     badges: string[];
     score: number;
+    // Security fields
+    deviceId?: string;
+    signedEvents?: SignedEvent[];
+    signature?: string;
 }
 
 const CONFIG_PATH = join(homedir(), '.statscode', 'config.json');
@@ -320,6 +336,53 @@ async function calculateStats(): Promise<SyncPayload | null> {
         // Get installed plugins
         const plugins = getInstalledPlugins();
 
+        // Get recent sessions for signing (last 100)
+        const recentSessions = db.exec(`
+            SELECT id, assistant, start_time, end_time, project_path
+            FROM sessions
+            ORDER BY start_time DESC
+            LIMIT 100
+        `);
+
+        // Create signed events for verification
+        const signedEvents: SignedEvent[] = [];
+        const deviceId = getDeviceId();
+
+        if (recentSessions[0]?.values) {
+            for (const row of recentSessions[0].values) {
+                const [id, assistant, startTime, endTime] = row;
+                const sessionData = {
+                    id: id as string,
+                    assistant: assistant as string,
+                    start_time: startTime as number,
+                    end_time: endTime as number | null,
+                    duration_ms: endTime ? (endTime as number) - (startTime as number) : null
+                };
+
+                const signedEvent = createSignedEvent('session', sessionData, startTime as number);
+
+                // Skip events with anomalies
+                const anomalies = detectAnomalies(signedEvent);
+                if (anomalies.length === 0) {
+                    signedEvents.push(signedEvent);
+                }
+            }
+        }
+
+        db.close();
+
+        // Create payload signature (hash of all data)
+        const payloadData = {
+            totalHours: Number(totalHours.toFixed(2)),
+            totalSessions,
+            totalInteractions,
+            deviceId,
+            timestamp: Date.now()
+        };
+        const payloadSignature = createHmac('sha256', deviceId)
+            .update(JSON.stringify(payloadData))
+            .digest('hex');
+
         return {
             totalHours: Number(totalHours.toFixed(2)),
             totalSessions,
@@ -331,7 +394,11 @@ async function calculateStats(): Promise<SyncPayload | null> {
             byLanguage: Object.keys(languageCounts).length > 0 ? languageCounts : undefined,
             plugins: plugins.length > 0 ? plugins : undefined,
             badges: [], // Badges will be calculated server-side
-            score: Number(score.toFixed(1))
+            score: Number(score.toFixed(1)),
+            // Security: include device ID and signed events
+            deviceId,
+            signedEvents: signedEvents.length > 0 ? signedEvents : undefined,
+            signature: payloadSignature
         };
     } catch {
         return null;

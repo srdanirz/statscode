@@ -2916,6 +2916,92 @@ var CertificateGenerator = class _CertificateGenerator {
   }
 };
 
+// ../core/dist/security.js
+import { createHmac, randomBytes } from "crypto";
+import { existsSync as existsSync2, readFileSync as readFileSync2, writeFileSync as writeFileSync2, mkdirSync as mkdirSync2 } from "fs";
+import { join as join2 } from "path";
+import { homedir as homedir2 } from "os";
+var CONFIG_DIR = join2(homedir2(), ".statscode");
+var KEY_FILE = join2(CONFIG_DIR, "device.key");
+var deviceKey = null;
+function getDeviceKey() {
+  if (deviceKey)
+    return deviceKey;
+  if (!existsSync2(CONFIG_DIR)) {
+    mkdirSync2(CONFIG_DIR, { recursive: true });
+  }
+  if (existsSync2(KEY_FILE)) {
+    deviceKey = readFileSync2(KEY_FILE, "utf-8").trim();
+  } else {
+    deviceKey = randomBytes(32).toString("hex");
+    writeFileSync2(KEY_FILE, deviceKey, { mode: 384 });
+  }
+  return deviceKey;
+}
+function getDeviceId() {
+  const key = getDeviceKey();
+  return createHmac("sha256", key).update("device-id").digest("hex").slice(0, 16);
+}
+function signEvent(payload) {
+  const key = getDeviceKey();
+  const data = canonicalize(payload);
+  return createHmac("sha256", key).update(data).digest("hex");
+}
+function createSignedEvent(type, data, timestamp) {
+  const payload = {
+    type,
+    data,
+    timestamp,
+    deviceId: getDeviceId(),
+    nonce: randomBytes(8).toString("hex")
+    // Prevent replay attacks
+  };
+  return {
+    ...payload,
+    signature: signEvent(payload)
+  };
+}
+function canonicalize(obj) {
+  return JSON.stringify(obj, Object.keys(obj).sort());
+}
+var ANOMALY_THRESHOLDS = {
+  // Max hours per day
+  maxHoursPerDay: 16,
+  // Max sessions per hour
+  maxSessionsPerHour: 10,
+  // Max interactions per minute
+  maxInteractionsPerMinute: 60,
+  // Min session duration (ms) - sessions under this are suspicious
+  minSessionDuration: 5e3,
+  // 5 seconds
+  // Max session duration (ms) - sessions over this are suspicious
+  maxSessionDuration: 12 * 60 * 60 * 1e3,
+  // 12 hours
+  // Max time drift (ms) - events from the future are rejected
+  maxTimeDrift: 5 * 60 * 1e3
+  // 5 minutes
+};
+function detectAnomalies(event) {
+  const anomalies = [];
+  const now = Date.now();
+  if (event.timestamp > now + ANOMALY_THRESHOLDS.maxTimeDrift) {
+    anomalies.push("timestamp_future");
+  }
+  if (event.timestamp < now - 30 * 24 * 60 * 60 * 1e3) {
+    anomalies.push("timestamp_too_old");
+  }
+  if (event.type === "session" && event.data.duration_ms) {
+    const duration = event.data.duration_ms;
+    if (duration < ANOMALY_THRESHOLDS.minSessionDuration) {
+      anomalies.push("session_too_short");
+    }
+    if (duration > ANOMALY_THRESHOLDS.maxSessionDuration) {
+      anomalies.push("session_too_long");
+    }
+  }
+  return anomalies;
+}
+
 // ../core/dist/index.js
 var StatsCode = class {
   tracker;
@@ -2969,9 +3055,9 @@ var StatsCode = class {
 };
 
 // hooks/index.ts
-import { homedir as homedir3 } from "os";
-import { join as join3 } from "path";
-import { existsSync as existsSync3, readFileSync as readFileSync3, writeFileSync as writeFileSync2, mkdirSync as mkdirSync2, readdirSync } from "fs";
+import { homedir as homedir4 } from "os";
+import { join as join4 } from "path";
+import { existsSync as existsSync4, readFileSync as readFileSync4, writeFileSync as writeFileSync3, mkdirSync as mkdirSync3, readdirSync } from "fs";
 
 // ../api-client/dist/client.js
 var DEFAULT_API_URL = "https://api.statscode.dev";
@@ -3147,36 +3233,37 @@ var StatsCodeClient = class {
 
 // hooks/auto-sync.ts
 var import_sql2 = __toESM(require_sql_wasm(), 1);
-import { homedir as homedir2 } from "os";
-import { join as join2 } from "path";
-import { existsSync as existsSync2, readFileSync as readFileSync2 } from "fs";
-var CONFIG_PATH = join2(homedir2(), ".statscode", "config.json");
-var DB_PATH = join2(homedir2(), ".statscode", "stats.sqlite");
+import { homedir as homedir3 } from "os";
+import { join as join3 } from "path";
+import { existsSync as existsSync3, readFileSync as readFileSync3 } from "fs";
+import { createHmac as createHmac2 } from "crypto";
+var CONFIG_PATH = join3(homedir3(), ".statscode", "config.json");
+var DB_PATH = join3(homedir3(), ".statscode", "stats.sqlite");
 function readConfig() {
   try {
-    if (!existsSync2(CONFIG_PATH)) {
+    if (!existsSync3(CONFIG_PATH)) {
       return {};
     }
-    const content = readFileSync2(CONFIG_PATH, "utf-8");
+    const content = readFileSync3(CONFIG_PATH, "utf-8");
     return JSON.parse(content);
   } catch {
     return {};
   }
 }
 function saveConfig(config) {
-  const configDir = join2(homedir2(), ".statscode");
-  if (!existsSync2(configDir)) {
-    const { mkdirSync: mkdirSync3 } = __require("fs");
-    mkdirSync3(configDir, { recursive: true });
+  const configDir = join3(homedir3(), ".statscode");
+  if (!existsSync3(configDir)) {
+    const { mkdirSync: mkdirSync4 } = __require("fs");
+    mkdirSync4(configDir, { recursive: true });
   }
-  const { writeFileSync: writeFileSync3 } = __require("fs");
-  writeFileSync3(CONFIG_PATH, JSON.stringify(config, null, 2));
+  const { writeFileSync: writeFileSync4 } = __require("fs");
+  writeFileSync4(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 function getInstalledPlugins() {
   try {
-    const pluginsPath = join2(homedir2(), ".claude", "plugins", "installed_plugins.json");
-    if (!existsSync2(pluginsPath)) return [];
-    const data = JSON.parse(readFileSync2(pluginsPath, "utf-8"));
+    const pluginsPath = join3(homedir3(), ".claude", "plugins", "installed_plugins.json");
+    if (!existsSync3(pluginsPath)) return [];
+    const data = JSON.parse(readFileSync3(pluginsPath, "utf-8"));
     return Object.keys(data.plugins || {});
   } catch {
     return [];
@@ -3298,12 +3385,12 @@ async function refreshTokenIfNeeded(config) {
   return config.token;
 }
 async function calculateStats() {
-  if (!existsSync2(DB_PATH)) {
+  if (!existsSync3(DB_PATH)) {
     return null;
   }
   try {
     const SQL = await (0, import_sql2.default)();
-    const buffer = readFileSync2(DB_PATH);
+    const buffer = readFileSync3(DB_PATH);
     const db = new SQL.Database(buffer);
     const sessionsResult = db.exec("SELECT COUNT(*) as count FROM sessions");
     const totalSessions = sessionsResult[0]?.values[0]?.[0] || 0;
@@ -3398,6 +3485,40 @@ async function calculateStats() {
     );
     db.close();
     const plugins = getInstalledPlugins();
+    const recentSessions = db.exec(`
+            SELECT id, assistant, start_time, end_time, project_path
+            FROM sessions
+            ORDER BY start_time DESC
+            LIMIT 100
+        `);
+    const signedEvents = [];
+    const deviceId = getDeviceId();
+    if (recentSessions[0]?.values) {
+      for (const row of recentSessions[0].values) {
+        const [id, assistant, startTime, endTime] = row;
+        const sessionData = {
+          id,
+          assistant,
+          start_time: startTime,
+          end_time: endTime,
+          duration_ms: endTime ? endTime - startTime : null
+        };
+        const signedEvent = createSignedEvent("session", sessionData, startTime);
+        const anomalies = detectAnomalies(signedEvent);
+        if (anomalies.length === 0) {
+          signedEvents.push(signedEvent);
+        }
+      }
+    }
+    db.close();
+    const payloadData = {
+      totalHours: Number(totalHours.toFixed(2)),
+      totalSessions,
+      totalInteractions,
+      deviceId,
+      timestamp: Date.now()
+    };
+    const payloadSignature = createHmac2("sha256", deviceId).update(JSON.stringify(payloadData)).digest("hex");
     return {
       totalHours: Number(totalHours.toFixed(2)),
       totalSessions,
@@ -3410,7 +3531,11 @@ async function calculateStats() {
       plugins: plugins.length > 0 ? plugins : void 0,
       badges: [],
       // Badges will be calculated server-side
-      score: Number(score.toFixed(1))
+      score: Number(score.toFixed(1)),
+      // Security: include device ID and signed events
+      deviceId,
+      signedEvents: signedEvents.length > 0 ? signedEvents : void 0,
+      signature: payloadSignature
     };
   } catch {
     return null;
@@ -3441,17 +3566,17 @@ async function autoSync() {
 }
 
 // hooks/index.ts
-var SESSION_FILE = join3(homedir3(), ".statscode", "current_session.json");
+var SESSION_FILE = join4(homedir4(), ".statscode", "current_session.json");
 var statsCode = null;
 var initPromise = null;
 async function getStatsCode() {
   if (!statsCode) {
-    const dir = join3(homedir3(), ".statscode");
-    if (!existsSync3(dir)) {
-      mkdirSync2(dir, { recursive: true });
+    const dir = join4(homedir4(), ".statscode");
+    if (!existsSync4(dir)) {
+      mkdirSync3(dir, { recursive: true });
     }
     statsCode = new StatsCode({
-      dbPath: join3(dir, "stats.sqlite"),
+      dbPath: join4(dir, "stats.sqlite"),
       debug: process.env.STATSCODE_DEBUG === "true",
       enableTips: false
       // Disable tips for hook processes
@@ -3463,18 +3588,18 @@ async function getStatsCode() {
 }
 function saveSessionId(sessionId) {
   try {
-    const dir = join3(homedir3(), ".statscode");
-    if (!existsSync3(dir)) {
-      mkdirSync2(dir, { recursive: true });
+    const dir = join4(homedir4(), ".statscode");
+    if (!existsSync4(dir)) {
+      mkdirSync3(dir, { recursive: true });
     }
-    writeFileSync2(SESSION_FILE, JSON.stringify({ sessionId, timestamp: Date.now() }));
+    writeFileSync3(SESSION_FILE, JSON.stringify({ sessionId, timestamp: Date.now() }));
   } catch {
   }
 }
 function loadSessionId() {
   try {
-    if (!existsSync3(SESSION_FILE)) return null;
-    const data = JSON.parse(readFileSync3(SESSION_FILE, "utf-8"));
+    if (!existsSync4(SESSION_FILE)) return null;
+    const data = JSON.parse(readFileSync4(SESSION_FILE, "utf-8"));
     if (Date.now() - data.timestamp > 2 * 60 * 60 * 1e3) {
       return null;
     }
@@ -3565,8 +3690,8 @@ async function SessionStart() {
 async function SessionEnd() {
   await autoSync();
   try {
-    if (existsSync3(SESSION_FILE)) {
-      writeFileSync2(SESSION_FILE, JSON.stringify({ sessionId: null, timestamp: 0 }));
+    if (existsSync4(SESSION_FILE)) {
+      writeFileSync3(SESSION_FILE, JSON.stringify({ sessionId: null, timestamp: 0 }));
     }
   } catch {
   }
@@ -3587,7 +3712,7 @@ async function Stop() {
   }
 }
 async function PreCompact(params) {
-  if (params.transcript_path && existsSync3(params.transcript_path)) {
+  if (params.transcript_path && existsSync4(params.transcript_path)) {
     await generateSessionDebrief(params.transcript_path, params.trigger);
   } else {
     await generateDatabaseDebrief(params.trigger);
@@ -3595,11 +3720,11 @@ async function PreCompact(params) {
 }
 async function generateDatabaseDebrief(trigger) {
   try {
-    const dbPath = join3(homedir3(), ".statscode", "stats.sqlite");
-    if (!existsSync3(dbPath)) return;
+    const dbPath = join4(homedir4(), ".statscode", "stats.sqlite");
+    if (!existsSync4(dbPath)) return;
     const initSqlJs3 = (await Promise.resolve().then(() => __toESM(require_sql_wasm(), 1))).default;
     const SQL = await initSqlJs3();
-    const buffer = readFileSync3(dbPath);
+    const buffer = readFileSync4(dbPath);
     const db = new SQL.Database(buffer);
     const sessionResult = db.exec(`
             SELECT s.id, COUNT(i.id) as interaction_count
@@ -3616,12 +3741,12 @@ async function generateDatabaseDebrief(trigger) {
       return;
     }
     const sessionId = sessionResult[0].values[0][0];
-    const insightsDir = join3(homedir3(), ".statscode", "insights");
-    if (existsSync3(insightsDir)) {
+    const insightsDir = join4(homedir4(), ".statscode", "insights");
+    if (existsSync4(insightsDir)) {
       const existingDebriefs = readdirSync(insightsDir);
       for (const file of existingDebriefs) {
         try {
-          const content = JSON.parse(readFileSync3(join3(insightsDir, file), "utf-8"));
+          const content = JSON.parse(readFileSync4(join4(insightsDir, file), "utf-8"));
           if (content.sessionId === sessionId) {
             db.close();
             return;
@@ -3673,8 +3798,8 @@ async function generateDatabaseDebrief(trigger) {
       durationMinutes = Math.round((endTime - startTime) / 6e4);
     }
     db.close();
-    if (!existsSync3(insightsDir)) {
-      mkdirSync2(insightsDir, { recursive: true });
+    if (!existsSync4(insightsDir)) {
+      mkdirSync3(insightsDir, { recursive: true });
     }
     const strengths = [];
     const improvements = [];
@@ -3709,21 +3834,21 @@ async function generateDatabaseDebrief(trigger) {
       },
       summary: `Session: ${prompts} prompts, ${toolUses} tool uses, ${edits} edits, ${durationMinutes}min`
     };
-    const debriefPath = join3(insightsDir, `${debrief.id}.json`);
-    writeFileSync2(debriefPath, JSON.stringify(debrief, null, 2));
+    const debriefPath = join4(insightsDir, `${debrief.id}.json`);
+    writeFileSync3(debriefPath, JSON.stringify(debrief, null, 2));
   } catch {
   }
 }
 async function generateSessionDebrief(transcriptPath, trigger) {
   if (!transcriptPath) return;
   try {
-    if (!existsSync3(transcriptPath)) return;
-    const transcript = JSON.parse(readFileSync3(transcriptPath, "utf-8"));
+    if (!existsSync4(transcriptPath)) return;
+    const transcript = JSON.parse(readFileSync4(transcriptPath, "utf-8"));
     const analysis = analyzeTranscript(transcript);
     if (analysis.totalInteractions < 5) return;
-    const insightsDir = join3(homedir3(), ".statscode", "insights");
-    if (!existsSync3(insightsDir)) {
-      mkdirSync2(insightsDir, { recursive: true });
+    const insightsDir = join4(homedir4(), ".statscode", "insights");
+    if (!existsSync4(insightsDir)) {
+      mkdirSync3(insightsDir, { recursive: true });
     }
     const debrief = {
       id: `debrief-${Date.now()}`,
@@ -3748,8 +3873,8 @@ async function generateSessionDebrief(transcriptPath, trigger) {
       // Raw data for future AI analysis
       summary: analysis.summary
     };
-    const debriefPath = join3(insightsDir, `${debrief.id}.json`);
-    writeFileSync2(debriefPath, JSON.stringify(debrief, null, 2));
+    const debriefPath = join4(insightsDir, `${debrief.id}.json`);
+    writeFileSync3(debriefPath, JSON.stringify(debrief, null, 2));
   } catch {
   }
 }

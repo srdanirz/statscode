@@ -27,6 +27,18 @@ export { Tracker } from './tracker.js';
 export { Analyzer } from './analyzer.js';
 export { CertificateGenerator } from './certificate.js';
 
+// Security - cryptographic signing and anomaly detection
+export {
+    getDeviceId,
+    getDeviceKey,
+    signEvent,
+    createSignedEvent,
+    verifyEvent,
+    detectAnomalies,
+    ANOMALY_THRESHOLDS
+} from './security.js';
+export type { SignedEvent, EventPayload } from './security.js';
+
 // Convenience factory function
 import { Tracker } from './tracker.js';
 import { Analyzer } from './analyzer.js';

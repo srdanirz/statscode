@@ -42,7 +42,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var require_sql_wasm = __commonJS({
   "../../node_modules/sql.js/dist/sql-wasm.js"(exports, module) {
     var initSqlJsPromise = void 0;
-    var initSqlJs2 = function(moduleConfig) {
+    var initSqlJs3 = function(moduleConfig) {
       if (initSqlJsPromise) {
         return initSqlJsPromise;
       }
@@ -2118,14 +2118,14 @@ var require_sql_wasm = __commonJS({
       return initSqlJsPromise;
     };
     if (typeof exports === "object" && typeof module === "object") {
-      module.exports = initSqlJs2;
-      module.exports.default = initSqlJs2;
+      module.exports = initSqlJs3;
+      module.exports.default = initSqlJs3;
     } else if (typeof define === "function" && define["amd"]) {
       define([], function() {
-        return initSqlJs2;
+        return initSqlJs3;
       });
     } else if (typeof exports === "object") {
-      exports["Module"] = initSqlJs2;
+      exports["Module"] = initSqlJs3;
     }
   }
 });
@@ -2302,38 +2302,131 @@ var StatsCodeClient = class {
   }
 };
 
-// hooks/auto-sync.ts
+// ../core/dist/database.js
 var import_sql = __toESM(require_sql_wasm(), 1);
 import { homedir } from "os";
 import { join } from "path";
-import { existsSync, readFileSync } from "fs";
-var CONFIG_PATH = join(homedir(), ".statscode", "config.json");
-var DB_PATH = join(homedir(), ".statscode", "stats.sqlite");
+var DEFAULT_DB_PATH = join(homedir(), ".statscode", "stats.sqlite");
+
+// ../core/dist/security.js
+import { createHmac, randomBytes } from "crypto";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { join as join2 } from "path";
+import { homedir as homedir2 } from "os";
+var CONFIG_DIR = join2(homedir2(), ".statscode");
+var KEY_FILE = join2(CONFIG_DIR, "device.key");
+var deviceKey = null;
+function getDeviceKey() {
+  if (deviceKey)
+    return deviceKey;
+  if (!existsSync(CONFIG_DIR)) {
+    mkdirSync(CONFIG_DIR, { recursive: true });
+  }
+  if (existsSync(KEY_FILE)) {
+    deviceKey = readFileSync(KEY_FILE, "utf-8").trim();
+  } else {
+    deviceKey = randomBytes(32).toString("hex");
+    writeFileSync(KEY_FILE, deviceKey, { mode: 384 });
+  }
+  return deviceKey;
+}
+function getDeviceId() {
+  const key = getDeviceKey();
+  return createHmac("sha256", key).update("device-id").digest("hex").slice(0, 16);
+}
+function signEvent(payload) {
+  const key = getDeviceKey();
+  const data = canonicalize(payload);
+  return createHmac("sha256", key).update(data).digest("hex");
+}
+function createSignedEvent(type, data, timestamp) {
+  const payload = {
+    type,
+    data,
+    timestamp,
+    deviceId: getDeviceId(),
+    nonce: randomBytes(8).toString("hex")
+    // Prevent replay attacks
+  };
+  return {
+    ...payload,
+    signature: signEvent(payload)
+  };
+}
+function canonicalize(obj) {
+  return JSON.stringify(obj, Object.keys(obj).sort());
+}
+var ANOMALY_THRESHOLDS = {
+  // Max hours per day
+  maxHoursPerDay: 16,
+  // Max sessions per hour
+  maxSessionsPerHour: 10,
+  // Max interactions per minute
+  maxInteractionsPerMinute: 60,
+  // Min session duration (ms) - sessions under this are suspicious
+  minSessionDuration: 5e3,
+  // 5 seconds
+  // Max session duration (ms) - sessions over this are suspicious
+  maxSessionDuration: 12 * 60 * 60 * 1e3,
+  // 12 hours
+  // Max time drift (ms) - events from the future are rejected
+  maxTimeDrift: 5 * 60 * 1e3
+  // 5 minutes
+};
+function detectAnomalies(event) {
+  const anomalies = [];
+  const now = Date.now();
+  if (event.timestamp > now + ANOMALY_THRESHOLDS.maxTimeDrift) {
+    anomalies.push("timestamp_future");
+  }
+  if (event.timestamp < now - 30 * 24 * 60 * 60 * 1e3) {
+    anomalies.push("timestamp_too_old");
+  }
+  if (event.type === "session" && event.data.duration_ms) {
+    const duration = event.data.duration_ms;
+    if (duration < ANOMALY_THRESHOLDS.minSessionDuration) {
+      anomalies.push("session_too_short");
+    }
+    if (duration > ANOMALY_THRESHOLDS.maxSessionDuration) {
+      anomalies.push("session_too_long");
+    }
+  }
+  return anomalies;
+}
+
+// hooks/auto-sync.ts
+var import_sql2 = __toESM(require_sql_wasm(), 1);
+import { homedir as homedir3 } from "os";
+import { join as join3 } from "path";
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "fs";
+import { createHmac as createHmac2 } from "crypto";
+var CONFIG_PATH = join3(homedir3(), ".statscode", "config.json");
+var DB_PATH = join3(homedir3(), ".statscode", "stats.sqlite");
 function readConfig() {
   try {
-    if (!existsSync(CONFIG_PATH)) {
+    if (!existsSync2(CONFIG_PATH)) {
       return {};
     }
-    const content = readFileSync(CONFIG_PATH, "utf-8");
+    const content = readFileSync2(CONFIG_PATH, "utf-8");
     return JSON.parse(content);
   } catch {
     return {};
   }
 }
 function saveConfig(config) {
-  const configDir = join(homedir(), ".statscode");
-  if (!existsSync(configDir)) {
-    const { mkdirSync } = __require("fs");
-    mkdirSync(configDir, { recursive: true });
+  const configDir = join3(homedir3(), ".statscode");
+  if (!existsSync2(configDir)) {
+    const { mkdirSync: mkdirSync2 } = __require("fs");
+    mkdirSync2(configDir, { recursive: true });
   }
-  const { writeFileSync } = __require("fs");
-  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+  const { writeFileSync: writeFileSync2 } = __require("fs");
+  writeFileSync2(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 function getInstalledPlugins() {
   try {
-    const pluginsPath = join(homedir(), ".claude", "plugins", "installed_plugins.json");
-    if (!existsSync(pluginsPath)) return [];
-    const data = JSON.parse(readFileSync(pluginsPath, "utf-8"));
+    const pluginsPath = join3(homedir3(), ".claude", "plugins", "installed_plugins.json");
+    if (!existsSync2(pluginsPath)) return [];
+    const data = JSON.parse(readFileSync2(pluginsPath, "utf-8"));
     return Object.keys(data.plugins || {});
   } catch {
     return [];
@@ -2455,12 +2548,12 @@ async function refreshTokenIfNeeded(config) {
   return config.token;
 }
 async function calculateStats() {
-  if (!existsSync(DB_PATH)) {
+  if (!existsSync2(DB_PATH)) {
     return null;
   }
   try {
-    const SQL = await (0, import_sql.default)();
-    const buffer = readFileSync(DB_PATH);
+    const SQL = await (0, import_sql2.default)();
+    const buffer = readFileSync2(DB_PATH);
     const db = new SQL.Database(buffer);
     const sessionsResult = db.exec("SELECT COUNT(*) as count FROM sessions");
     const totalSessions = sessionsResult[0]?.values[0]?.[0] || 0;
@@ -2555,6 +2648,40 @@ async function calculateStats() {
     );
     db.close();
     const plugins = getInstalledPlugins();
+    const recentSessions = db.exec(`
+            SELECT id, assistant, start_time, end_time, project_path
+            FROM sessions
+            ORDER BY start_time DESC
+            LIMIT 100
+        `);
+    const signedEvents = [];
+    const deviceId = getDeviceId();
+    if (recentSessions[0]?.values) {
+      for (const row of recentSessions[0].values) {
+        const [id, assistant, startTime, endTime] = row;
+        const sessionData = {
+          id,
+          assistant,
+          start_time: startTime,
+          end_time: endTime,
+          duration_ms: endTime ? endTime - startTime : null
+        };
+        const signedEvent = createSignedEvent("session", sessionData, startTime);
+        const anomalies = detectAnomalies(signedEvent);
+        if (anomalies.length === 0) {
+          signedEvents.push(signedEvent);
+        }
+      }
+    }
+    db.close();
+    const payloadData = {
+      totalHours: Number(totalHours.toFixed(2)),
+      totalSessions,
+      totalInteractions,
+      deviceId,
+      timestamp: Date.now()
+    };
+    const payloadSignature = createHmac2("sha256", deviceId).update(JSON.stringify(payloadData)).digest("hex");
     return {
       totalHours: Number(totalHours.toFixed(2)),
       totalSessions,
@@ -2567,7 +2694,11 @@ async function calculateStats() {
       plugins: plugins.length > 0 ? plugins : void 0,
       badges: [],
       // Badges will be calculated server-side
-      score: Number(score.toFixed(1))
+      score: Number(score.toFixed(1)),
+      // Security: include device ID and signed events
+      deviceId,
+      signedEvents: signedEvents.length > 0 ? signedEvents : void 0,
+      signature: payloadSignature
     };
   } catch {
     return null;

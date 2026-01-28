@@ -65,4 +65,22 @@ export interface SyncPayload {
     plugins?: string[];
     badges: string[];
     score: number;
+
+    // Security: signed events for verification
+    deviceId?: string;
+    signedEvents?: SignedEvent[];
+    signature?: string; // Overall payload signature
+}
+
+/**
+ * Cryptographically signed event
+ * Prevents manipulation of stats after recording
+ */
+export interface SignedEvent {
+    type: 'session' | 'interaction';
+    data: Record<string, unknown>;
+    timestamp: number;
+    deviceId: string;
+    nonce: string;
+    signature: string;
 }
