@@ -3483,7 +3483,6 @@ async function calculateStats() {
       // Up to 1 point for multi-tool usage
       5
     );
-    db.close();
     const plugins = getInstalledPlugins();
     const recentSessions = db.exec(`
             SELECT id, assistant, start_time, end_time, project_path

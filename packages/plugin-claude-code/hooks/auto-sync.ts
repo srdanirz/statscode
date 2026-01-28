@@ -331,8 +331,6 @@ async function calculateStats(): Promise<SyncPayload | null> {
             5
         );
 
-        db.close();
-
         // Get installed plugins
         const plugins = getInstalledPlugins();
 
@@ -369,6 +367,7 @@ async function calculateStats(): Promise<SyncPayload | null> {
             }
         }
 
+        // Close database after all queries are done
         db.close();
 
         // Create payload signature (hash of all data)
