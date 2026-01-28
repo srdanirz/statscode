@@ -32,4 +32,9 @@ All notable changes to this project will be documented in this file.
 - Core tracking library (`@statscode/core`)
 - Badge system (`@statscode/badges`)
 - Plugin for Claude Code (`@statscode/plugin-claude-code`)
-- Plugin for Cursor, Codex, Antigravity, OpenCode
+
+### Planned
+- Plugin for Cursor (Pronto)
+- Plugin for Codex (Pronto)
+- Plugin for Antigravity (Pronto)
+- Plugin for OpenCode (Pronto)

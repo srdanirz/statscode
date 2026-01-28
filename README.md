@@ -13,6 +13,16 @@ StatsCode tracks how you use AI coding assistants. Think of it as **GitHub stats
 - **Sync to cloud** and appear on the leaderboard
 - **Add a badge** to your GitHub profile
 
+## Supported Tools
+
+| Tool | Status |
+|------|--------|
+| Claude Code | Available |
+| Codex | Pronto |
+| Antigravity | Pronto |
+| OpenCode | Pronto |
+| Cursor | Pronto |
+
 ## Quick Start (Claude Code)
 
 ```bash
