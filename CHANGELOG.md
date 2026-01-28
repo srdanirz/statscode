@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.11] - 2026-01-28
+
+### Added
+- OpenCode plugin with correct API integration
+  - Implements official OpenCode hooks (`session.created`, `tool.execute.before`, etc.)
+  - Based on [OpenCode Plugin Documentation](https://opencode.ai/docs/plugins/)
+  - Custom tools: `statscode.stats`, `statscode.badge`, `statscode.sync`
+
+### Changed
+- Updated `@statscode/plugin-opencode` to use official OpenCode plugin structure
+- Added README with installation instructions for OpenCode
+
 ## [0.3.10] - 2026-01-28
 
 ### Added
