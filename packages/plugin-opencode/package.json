@@ -1,6 +1,6 @@
 {
     "name": "@statscode/plugin-opencode",
-    "version": "0.2.4",
+    "version": "0.3.0",
     "description": "StatsCode plugin for OpenCode - Track your AI coding stats",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -19,9 +19,15 @@
         "plugin",
         "ai-stats"
     ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/srdanirz/statscode.git",
+        "directory": "packages/plugin-opencode"
+    },
+    "homepage": "https://statscode.dev",
     "license": "MIT",
     "dependencies": {
-        "@statscode/core": "^0.2.4"
+        "@statscode/core": "^0.3.0"
     },
     "peerDependencies": {
         "typescript": "^5.0.0"
