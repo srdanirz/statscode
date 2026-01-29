@@ -4,8 +4,7 @@ Track your AI coding hours, patterns, and achievements.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🌐 **Languages:** English • Español • Português • Français • Deutsch • 日本語 • 中文 • and more
-> StatsCode responds in your conversation language automatically
+🌐 [English](README.md) • [Español](docs/README.es.md) • [Português](docs/README.pt.md) • [中文](docs/README.zh.md)
 
 ## What is StatsCode?
 
