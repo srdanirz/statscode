@@ -2,6 +2,15 @@
 
 Track your AI coding stats, hours, patterns, and achievements directly in Claude Code.
 
+## Languages / Idiomas
+
+StatsCode automatically responds in the language you use with Claude:
+- 🇺🇸 **English** - Use Claude in English → Stats in English
+- 🇪🇸 **Español** - Usa Claude en español → Stats en español
+- 🇧🇷 **Português** - Use Claude em português → Stats em português
+- 🇫🇷 **Français** - Utilisez Claude en français → Stats en français
+- And any other language Claude supports!
+
 ## Installation
 
 Install via Claude Code plugin marketplace or manually:
