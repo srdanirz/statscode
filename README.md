@@ -4,6 +4,9 @@ Track your AI coding hours, patterns, and achievements.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+🌐 **Languages:** English • Español • Português • Français • Deutsch • 日本語 • 中文 • and more
+> StatsCode responds in your conversation language automatically
+
 ## What is StatsCode?
 
 StatsCode tracks how you use AI coding assistants. Think of it as **GitHub stats for AI-assisted coding**.
