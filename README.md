@@ -37,6 +37,11 @@ In Claude Code, run:
 
 Then enable it with `/plugin` and select `statscode`.
 
+Alternative:
+```
+/plugin install statscode@srdanirz/statscode
+```
+
 #### Commands
 
 | Command | Description |
