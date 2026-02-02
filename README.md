@@ -29,14 +29,13 @@ StatsCode tracks how you use AI coding assistants. Think of it as **GitHub stats
 
 ### Claude Code
 
-```bash
-# Install via marketplace
-claude plugins install statscode
+In Claude Code, run:
 
-# Or manually
-cd ~/.claude/plugins
-git clone https://github.com/srdanirz/statscode
 ```
+/plugin marketplace add srdanirz/statscode
+```
+
+Then enable it with `/plugin` and select `statscode`.
 
 #### Commands
 
@@ -99,6 +98,10 @@ After logging in with `/statscode:login`:
 - Cloud sync is **opt-in** only
 - No code or prompts uploaded
 - Only aggregated stats synced
+
+## Requirements
+
+- Node.js 18+ (tested up to Node 24)
 
 ## Development
 

@@ -31,7 +31,7 @@
     "homepage": "https://statscode.dev",
     "license": "MIT",
     "dependencies": {
-        "sql.js": "^1.10.0"
+        "sql.js": "^1.13.0"
     },
     "devDependencies": {},
     "peerDependencies": {
