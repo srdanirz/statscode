@@ -29,16 +29,8 @@ StatsCode tracks how you use AI coding assistants. Think of it as **GitHub stats
 
 ### Claude Code
 
-In Claude Code, run:
-
 ```
 /plugin marketplace add srdanirz/statscode
-```
-
-Then enable it with `/plugin` and select `statscode`.
-
-Alternative:
-```
 /plugin install statscode@srdanirz/statscode
 ```
 
