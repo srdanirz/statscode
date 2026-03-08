@@ -2,19 +2,27 @@
  * StatsCode Database Module
  * Handles SQLite storage for sessions and interactions
  * Uses sql.js (pure JavaScript SQLite) for maximum compatibility
+ *
+ * ARCHITECTURE NOTE: Each Claude Code hook runs in a separate Node.js process.
+ * Multiple hooks can fire concurrently (e.g., PreToolUse + PostToolUse).
+ * To prevent data loss from concurrent writes, this module:
+ * 1. Re-reads the database from disk before each write operation
+ * 2. Uses atomic writes (write to temp file, then rename)
+ * 3. Only saves to disk when actual data changes occur (not on init)
  */
 
-import initSqlJs, { Database } from 'sql.js';
+import initSqlJs, { Database, SqlJsStatic } from 'sql.js';
 import { Session, Interaction, StatsCodeConfig } from './types.js';
 import { randomUUID } from 'crypto';
 import { homedir } from 'os';
 import { join } from 'path';
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, renameSync, unlinkSync } from 'fs';
 
 const DEFAULT_DB_PATH = join(homedir(), '.statscode', 'stats.sqlite');
 
 export class StatsDatabase {
     private db: Database | null = null;
+    private sqlModule: SqlJsStatic | null = null;
     private dbPath: string;
     private initialized: Promise<void>;
 
@@ -30,21 +38,64 @@ export class StatsDatabase {
     }
 
     private async init(): Promise<void> {
-        const SQL = await initSqlJs();
+        this.sqlModule = await initSqlJs();
+        this.loadFromDisk();
+        this.initTables();
+    }
 
-        // Load existing database if it exists
-        if (existsSync(this.dbPath)) {
-            const buffer = readFileSync(this.dbPath);
-            this.db = new SQL.Database(buffer);
-        } else {
-            this.db = new SQL.Database();
+    /**
+     * Load (or reload) the database from disk.
+     * Creates a fresh in-memory database if no file exists.
+     */
+    private loadFromDisk(): void {
+        if (!this.sqlModule) return;
+
+        // Close existing instance if reloading
+        if (this.db) {
+            try { this.db.close(); } catch { /* ignore */ }
+            this.db = null;
         }
 
-        this.initTables();
+        if (existsSync(this.dbPath)) {
+            try {
+                const buffer = readFileSync(this.dbPath);
+                this.db = new this.sqlModule.Database(buffer);
+            } catch {
+                // If the file is corrupted, start fresh but log it
+                this.db = new this.sqlModule.Database();
+            }
+        } else {
+            this.db = new this.sqlModule.Database();
+        }
+    }
+
+    /**
+     * Reload from disk before a write operation to minimize race conditions.
+     * This ensures we have the latest state from other concurrent processes
+     * before applying our change.
+     */
+    private reloadBeforeWrite(): void {
+        if (!this.sqlModule || !existsSync(this.dbPath)) return;
+
+        try {
+            const buffer = readFileSync(this.dbPath);
+            if (this.db) {
+                try { this.db.close(); } catch { /* ignore */ }
+            }
+            this.db = new this.sqlModule.Database(buffer);
+        } catch {
+            // If reload fails, continue with current in-memory state
+        }
     }
 
     private initTables(): void {
         if (!this.db) return;
+
+        // Check if tables already exist before creating them
+        const tablesExist = this.db.exec(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'"
+        );
+        const needsInit = tablesExist.length === 0 || tablesExist[0]?.values?.length === 0;
 
         this.db.run(`
       CREATE TABLE IF NOT EXISTS sessions (
@@ -75,7 +126,11 @@ export class StatsDatabase {
         this.db.run(`CREATE INDEX IF NOT EXISTS idx_interactions_session ON interactions(session_id)`);
         this.db.run(`CREATE INDEX IF NOT EXISTS idx_interactions_type ON interactions(type)`);
 
-        this.save();
+        // Only save if tables were just created (avoid unnecessary file writes
+        // that cause race conditions between concurrent hook processes)
+        if (needsInit) {
+            this.saveToDisk();
+        }
     }
 
     /** Ensure database is ready */
@@ -83,16 +138,29 @@ export class StatsDatabase {
         await this.initialized;
     }
 
-    /** Save database to disk */
-    private save(): void {
+    /** Save database to disk using atomic write to prevent corruption */
+    private saveToDisk(): void {
         if (!this.db) return;
         const data = this.db.export();
         const buffer = Buffer.from(data);
-        writeFileSync(this.dbPath, buffer);
+
+        // Atomic write: write to temp file then rename
+        // This prevents partial writes from corrupting the database
+        const tmpPath = this.dbPath + '.tmp.' + process.pid;
+        try {
+            writeFileSync(tmpPath, buffer);
+            renameSync(tmpPath, this.dbPath);
+        } catch (error) {
+            // Clean up temp file on failure
+            try { unlinkSync(tmpPath); } catch { /* ignore */ }
+            throw error;
+        }
     }
 
     /** Create a new session and return its ID */
     createSession(session: Omit<Session, 'id'>): string {
+        // Reload from disk to get latest state from other processes
+        this.reloadBeforeWrite();
         if (!this.db) throw new Error('Database not initialized');
 
         const id = randomUUID();
@@ -109,19 +177,21 @@ export class StatsDatabase {
             ]
         );
 
-        this.save();
+        this.saveToDisk();
         return id;
     }
 
     /** End a session by setting its end time */
     endSession(sessionId: string, endTime: Date = new Date()): void {
+        // Reload from disk to get latest state from other processes
+        this.reloadBeforeWrite();
         if (!this.db) throw new Error('Database not initialized');
 
         this.db.run(
             `UPDATE sessions SET end_time = ? WHERE id = ?`,
             [endTime.getTime(), sessionId]
         );
-        this.save();
+        this.saveToDisk();
     }
 
     /** Get a session by ID */
@@ -157,6 +227,8 @@ export class StatsDatabase {
 
     /** Record an interaction */
     recordInteraction(interaction: Omit<Interaction, 'id'>): string {
+        // Reload from disk to get latest state from other processes
+        this.reloadBeforeWrite();
         if (!this.db) throw new Error('Database not initialized');
 
         const id = randomUUID();
@@ -174,7 +246,7 @@ export class StatsDatabase {
             ]
         );
 
-        this.save();
+        this.saveToDisk();
         return id;
     }
 
@@ -245,7 +317,7 @@ export class StatsDatabase {
     /** Close database connection */
     close(): void {
         if (this.db) {
-            this.save();
+            this.saveToDisk();
             this.db.close();
             this.db = null;
         }

@@ -2135,10 +2135,11 @@ var import_sql = __toESM(require_sql_wasm(), 1);
 import { randomUUID } from "crypto";
 import { homedir } from "os";
 import { join } from "path";
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, renameSync, unlinkSync } from "fs";
 var DEFAULT_DB_PATH = join(homedir(), ".statscode", "stats.sqlite");
 var StatsDatabase = class {
   db = null;
+  sqlModule = null;
   dbPath;
   initialized;
   constructor(config = {}) {
@@ -2148,18 +2149,60 @@ var StatsDatabase = class {
     this.initialized = this.init();
   }
   async init() {
-    const SQL = await (0, import_sql.default)();
-    if (existsSync(this.dbPath)) {
-      const buffer = readFileSync(this.dbPath);
-      this.db = new SQL.Database(buffer);
-    } else {
-      this.db = new SQL.Database();
-    }
+    this.sqlModule = await (0, import_sql.default)();
+    this.loadFromDisk();
     this.initTables();
+  }
+  /**
+   * Load (or reload) the database from disk.
+   * Creates a fresh in-memory database if no file exists.
+   */
+  loadFromDisk() {
+    if (!this.sqlModule)
+      return;
+    if (this.db) {
+      try {
+        this.db.close();
+      } catch {
+      }
+      this.db = null;
+    }
+    if (existsSync(this.dbPath)) {
+      try {
+        const buffer = readFileSync(this.dbPath);
+        this.db = new this.sqlModule.Database(buffer);
+      } catch {
+        this.db = new this.sqlModule.Database();
+      }
+    } else {
+      this.db = new this.sqlModule.Database();
+    }
+  }
+  /**
+   * Reload from disk before a write operation to minimize race conditions.
+   * This ensures we have the latest state from other concurrent processes
+   * before applying our change.
+   */
+  reloadBeforeWrite() {
+    if (!this.sqlModule || !existsSync(this.dbPath))
+      return;
+    try {
+      const buffer = readFileSync(this.dbPath);
+      if (this.db) {
+        try {
+          this.db.close();
+        } catch {
+        }
+      }
+      this.db = new this.sqlModule.Database(buffer);
+    } catch {
+    }
   }
   initTables() {
     if (!this.db)
       return;
+    const tablesExist = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'");
+    const needsInit = tablesExist.length === 0 || tablesExist[0]?.values?.length === 0;
     this.db.run(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
@@ -2186,22 +2229,35 @@ var StatsDatabase = class {
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_sessions_start_time ON sessions(start_time)`);
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_interactions_session ON interactions(session_id)`);
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_interactions_type ON interactions(type)`);
-    this.save();
+    if (needsInit) {
+      this.saveToDisk();
+    }
   }
   /** Ensure database is ready */
   async ready() {
     await this.initialized;
   }
-  /** Save database to disk */
-  save() {
+  /** Save database to disk using atomic write to prevent corruption */
+  saveToDisk() {
     if (!this.db)
       return;
     const data = this.db.export();
     const buffer = Buffer.from(data);
-    writeFileSync(this.dbPath, buffer);
+    const tmpPath = this.dbPath + ".tmp." + process.pid;
+    try {
+      writeFileSync(tmpPath, buffer);
+      renameSync(tmpPath, this.dbPath);
+    } catch (error) {
+      try {
+        unlinkSync(tmpPath);
+      } catch {
+      }
+      throw error;
+    }
   }
   /** Create a new session and return its ID */
   createSession(session) {
+    this.reloadBeforeWrite();
     if (!this.db)
       throw new Error("Database not initialized");
     const id = randomUUID();
@@ -2214,15 +2270,16 @@ var StatsDatabase = class {
       session.projectPath ?? null,
       session.metadata ? JSON.stringify(session.metadata) : null
     ]);
-    this.save();
+    this.saveToDisk();
     return id;
   }
   /** End a session by setting its end time */
   endSession(sessionId, endTime = /* @__PURE__ */ new Date()) {
+    this.reloadBeforeWrite();
     if (!this.db)
       throw new Error("Database not initialized");
     this.db.run(`UPDATE sessions SET end_time = ? WHERE id = ?`, [endTime.getTime(), sessionId]);
-    this.save();
+    this.saveToDisk();
   }
   /** Get a session by ID */
   getSession(sessionId) {
@@ -2253,6 +2310,7 @@ var StatsDatabase = class {
   }
   /** Record an interaction */
   recordInteraction(interaction) {
+    this.reloadBeforeWrite();
     if (!this.db)
       throw new Error("Database not initialized");
     const id = randomUUID();
@@ -2266,7 +2324,7 @@ var StatsDatabase = class {
       interaction.toolName ?? null,
       interaction.metadata ? JSON.stringify(interaction.metadata) : null
     ]);
-    this.save();
+    this.saveToDisk();
     return id;
   }
   /** Get all interactions for a session */
@@ -2326,7 +2384,7 @@ var StatsDatabase = class {
   /** Close database connection */
   close() {
     if (this.db) {
-      this.save();
+      this.saveToDisk();
       this.db.close();
       this.db = null;
     }
@@ -2529,7 +2587,9 @@ var Tracker = class {
   /** Close the tracker and database connection */
   close() {
     if (this.currentSessionId) {
-      this.endSession();
+      const endTime = /* @__PURE__ */ new Date();
+      this.db.endSession(this.currentSessionId, endTime);
+      this.currentSessionId = null;
     }
     this.db.close();
   }
@@ -3617,6 +3677,7 @@ async function getReadyTracker(createIfMissing = false) {
   if (savedSessionId) {
     const attached = tracker.attachToSession(savedSessionId);
     if (attached) {
+      saveSessionId(savedSessionId);
       return { sc, tracker };
     }
   }
@@ -3996,8 +4057,10 @@ async function main() {
         await OnPrompt({ prompt: input.prompt || "" });
         break;
       case "Stop":
-      case "SessionEnd":
         await Stop();
+        break;
+      case "SessionEnd":
+        await SessionEnd();
         break;
       case "SessionStart":
         await SessionStart();

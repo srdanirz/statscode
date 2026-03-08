@@ -96,9 +96,11 @@ async function getReadyTracker(createIfMissing: boolean = false): Promise<{ sc: 
     if (savedSessionId) {
         const attached = tracker.attachToSession(savedSessionId);
         if (attached) {
+            // Refresh the session timestamp so it doesn't expire while user is active
+            saveSessionId(savedSessionId);
             return { sc, tracker };
         }
-        // Session expired or doesn't exist - clear the file
+        // Session doesn't exist in DB anymore - fall through
     }
 
     // Only SessionStart can create new sessions
@@ -683,8 +685,10 @@ async function main() {
                 await OnPrompt({ prompt: input.prompt || '' });
                 break;
             case 'Stop':
-            case 'SessionEnd':
                 await Stop();
+                break;
+            case 'SessionEnd':
+                await SessionEnd();
                 break;
             case 'SessionStart':
                 await SessionStart();

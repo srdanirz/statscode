@@ -238,7 +238,11 @@ export class Tracker {
     /** Close the tracker and database connection */
     close(): void {
         if (this.currentSessionId) {
-            this.endSession();
+            // Synchronously end the session in the database
+            // (endSession is async only for tips fetching, the DB write is sync)
+            const endTime = new Date();
+            this.db.endSession(this.currentSessionId, endTime);
+            this.currentSessionId = null;
         }
         this.db.close();
     }
